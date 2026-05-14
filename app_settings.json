@@ -1,0 +1,12 @@
+{
+  "company_name": "Tasniah Fabrics Ltd",
+  "company_subtitle": "Garment Order Tracking System",
+  "export_dir": "C:\\Users\\User\\Desktop\\garment_system_v4_final\\exports",
+  "logo_path": "",
+  "backup_dir": "C:\\Users\\User\\Desktop\\garment_system_v4_final\\backups",
+  "max_daily_backups": 30,
+  "theme": "dark",
+  "show_default_creds": false,
+  "reminder_days": 7,
+  "last_version": "1.2.0"
+}

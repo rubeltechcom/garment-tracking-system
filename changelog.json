@@ -1,0 +1,51 @@
+[
+    {
+        "version": "1.3.0",
+        "date": "2026-05-15",
+        "title": "Industrial-Grade Self-Update System",
+        "changes": [
+            "Implemented manual update check via Settings with detailed release notes preview.",
+            "Integrated Git-based synchronization for private repository support.",
+            "Added Update Review Dialog to compare versions before committing to an update.",
+            "Enhanced security by leveraging local Git authentication for private GitHub repos.",
+            "Removed background startup checks for a non-intrusive user experience."
+        ]
+    },
+    {
+        "version": "1.2.0",
+        "date": "2026-05-15",
+        "title": "System Integrity & Visual Analytics",
+        "changes": [
+            "Implemented Professional Version Control System (Changelog) to track system updates.",
+            "Added 'What's New' notification for system transparency.",
+            "Enhanced shipment alert system with proactive overdue and upcoming notifications.",
+            "Refined Review Updates Dialog for surgical precision during PDF imports.",
+            "Improved visual highlighting for recently modified records in the Order List.",
+            "Optimized database backup routines for industrial-grade data safety."
+        ]
+    },
+    {
+        "version": "1.1.0",
+        "date": "2026-05-14",
+        "title": "Professional UI & Dashboard Revamp",
+        "changes": [
+            "Introduced advanced visual analytics dashboard with trend charts.",
+            "Implemented donut charts for country-wise shipment distribution.",
+            "Launched 'ProToast' notification system for elegant user feedback.",
+            "Integrated circular progress visualization for shipping metrics.",
+            "Enhanced dark-mode theme with premium navy-slate palette."
+        ]
+    },
+    {
+        "version": "1.0.0",
+        "date": "2026-05-12",
+        "title": "Initial Release",
+        "changes": [
+            "Core Garment Tracking System architecture deployment.",
+            "Automated PDF extraction for H&M Country Breakdown and Purchase Orders.",
+            "Multi-user authentication system with role-based permissions.",
+            "Automated SQLite database backup and management.",
+            "Advanced filtering and Excel export capabilities."
+        ]
+    }
+]
