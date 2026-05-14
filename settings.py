@@ -27,6 +27,7 @@ _DEFAULTS = {
     "theme":           "dark",          # reserved for future light/dark toggle
     "show_default_creds": True,
     "reminder_days":   7,               # Lead time for shipment alerts
+    "license_key":     "NONE",          # User license key
 }
 
 
@@ -89,6 +90,7 @@ class SettingsDialog(tk.Toplevel):
         self._build_company_section(body)
         self._build_alert_section(body)
         self._build_export_section(body)
+        self._build_licensing_section(body)
         self._build_version_section(body)
         self._build_restore_section(body)
 
@@ -218,12 +220,27 @@ class SettingsDialog(tk.Toplevel):
         d = filedialog.askdirectory(title="Select Export Folder")
         if d: self._export_dir_var.set(d)
 
-    def _open_export(self):
-        d = self._export_dir_var.get()
-        if d and os.path.isdir(d):
-            import subprocess; subprocess.Popen(f'explorer "{d}"')
+    def _build_licensing_section(self, body):
+        from updater import get_hwid
+        self._section(body, "\U0001f512  LICENSE & DEVICE BINDING", T["gold"])
+        f = tk.Frame(body, bg=T["surf2"], padx=20, pady=16)
+        f.pack(fill="x", padx=12, pady=(0, 8))
+        
+        # Device ID (Read Only)
+        tk.Label(f, text="Your Device ID (Send this to Admin)", font=(T["font"], 8, "bold"),
+                 fg=T["muted"], bg=T["surf2"]).grid(row=0, column=0, sticky="w")
+        hwid_f = tk.Frame(f, bg=T["surf3"], padx=8, pady=4)
+        hwid_f.grid(row=1, column=0, sticky="ew", pady=(4, 10))
+        tk.Label(hwid_f, text=get_hwid(), font=(T["mono"], 10, "bold"),
+                 fg=T["accent"], bg=T["surf3"]).pack(side="left")
+        
+        # License Key Input
+        tk.Label(f, text="Enter License Key", font=(T["font"], 9, "bold"),
+                 fg=T["text"], bg=T["surf2"]).grid(row=2, column=0, sticky="w")
+        self._license_key_var = tk.StringVar(value=self.settings.get("license_key", "NONE"))
+        _entry(f, self._license_key_var, width=40).grid(row=3, column=0, sticky="ew", pady=(4, 0), ipady=5)
 
-    def _build_version_section(self, body):
+    def _build_export_section(self, body):
         self._section(body, "\U0001f4dc  SYSTEM VERSION & UPDATES", T["purple"])
         f = tk.Frame(body, bg=T["surf2"], padx=20, pady=16)
         f.pack(fill="x", padx=12, pady=(0, 8))
@@ -238,17 +255,20 @@ class SettingsDialog(tk.Toplevel):
              show_v, T["surf4"], size=8).pack(side="right")
 
         def check_upd():
-            self._status_var.set("⏳ Checking for updates...")
+            self._status_var.set("⏳ Validating license...")
             from updater import check_for_updates
             import threading
+            lkey = self._license_key_var.get().strip()
             def worker():
-                upd, v, cl = check_for_updates()
+                upd, v, cl = check_for_updates(lkey)
                 if upd:
                     self.after(0, lambda: self._status_var.set(f"🚀 Version v{v} available!"))
                     if hasattr(self.master, "_prompt_update"):
                         self.after(0, lambda: self.master._prompt_update(v, cl))
+                elif v is None and cl and cl.startswith("LICENSE_ERROR"):
+                    self.after(0, lambda: self._status_var.set("⚠ " + cl.replace("LICENSE_ERROR: ","")))
                 else:
-                    self.after(0, lambda: self._status_var.set("✓ You are on the latest version"))
+                    self.after(0, lambda: self._status_var.set("✓ Latest version & License Valid"))
             threading.Thread(target=worker, daemon=True).start()
 
         _btn(f, "🔄  Check for Updates", T["surf3"], T["text"],
@@ -393,6 +413,7 @@ class SettingsDialog(tk.Toplevel):
         self.settings["logo_path"]       = self._logo_path_var.get().strip()
         self.settings["export_dir"]      = self._export_dir_var.get().strip()
         self.settings["reminder_days"]   = int(self._reminder_days.get().strip() or "7")
+        self.settings["license_key"]     = self._license_key_var.get().strip()
 
         # Create export dir if needed
         ed = self.settings["export_dir"]

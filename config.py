@@ -6,8 +6,11 @@ AUTH_FILE = os.path.join(BASE_DIR, "auth.dat")
 REMEMBER_FILE = os.path.join(BASE_DIR, "remember.dat")
 CHANGELOG_FILE = os.path.join(BASE_DIR, "changelog.json")
 
-VERSION = "1.3.0"
-GITHUB_REPO = "https://github.com/yourusername/garment-tracking-system"
+VERSION = "1.4.0"
+GITHUB_REPO = "https://github.com/rubeltechcom/garment-tracking-system"
+GITHUB_TOKEN = "YOUR_PERSONAL_ACCESS_TOKEN" # Replace with your real token
+REPO_OWNER = "rubeltechcom"
+REPO_NAME = "garment-tracking-system"
 
 DEFAULT_COUNTRY_CUTOFF = {
     "US":"1st","OU":"1st","DK":"1st","NZ":"1st","DE":"1st",

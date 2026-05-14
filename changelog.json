@@ -1,5 +1,17 @@
 [
     {
+        "version": "1.4.0",
+        "date": "2026-05-15",
+        "title": "Pro-Licensing & Secure Deployment",
+        "changes": [
+            "Introduced Device Binding (HWID) to restrict updates to authorized machines.",
+            "Implemented Remote License Validation via private GitHub repository.",
+            "Upgraded update engine to use secure ZIP extraction (removes Git dependency for users).",
+            "Added Licensing UI in Settings for easy machine-id discovery and key entry.",
+            "Strengthened update security using personal access tokens (PAT)."
+        ]
+    },
+    {
         "version": "1.3.0",
         "date": "2026-05-15",
         "title": "Industrial-Grade Self-Update System",
