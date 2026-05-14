@@ -8,7 +8,7 @@ CHANGELOG_FILE = os.path.join(BASE_DIR, "changelog.json")
 
 VERSION = "1.4.0"
 GITHUB_REPO = "https://github.com/rubeltechcom/garment-tracking-system"
-GITHUB_TOKEN = "YOUR_PERSONAL_ACCESS_TOKEN" # Replace with your real token
+GITHUB_TOKEN = "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"
 REPO_OWNER = "rubeltechcom"
 REPO_NAME = "garment-tracking-system"
 
