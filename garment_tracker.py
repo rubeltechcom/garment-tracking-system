@@ -10,11 +10,10 @@ from database import (db_load, db_save, auth_load, auth_verify,
                        backup_on_close, backup_manual, stop_scheduled_backup,
                        get_backup_info, BACKUP_DIR, log_action)
 from logic import calculate_row, auto_first_last
-from pdf_handler import extract_hm_records, extract_store_breakdown_records
+from pdf_handler import extract_hm_records
 from export import export_excel
-from report_exporter import export_store_pdf
 from dashboard import DashboardFrame
-from dialogs import RowEditor, BulkEditor, CutoffManager, UserManager, ReportManager, FactoryMerchantManager, AdvancedSearchDialog, ProToast, show_confirm, ReviewUpdatesDialog, AuditLogViewerDialog, VersionHistoryDialog, UpdateReviewDialog, BreakdownViewer
+from dialogs import RowEditor, BulkEditor, CutoffManager, UserManager, ReportManager, FactoryMerchantManager, AdvancedSearchDialog, ProToast, show_confirm, ReviewUpdatesDialog, AuditLogViewerDialog, VersionHistoryDialog, UpdateReviewDialog
 from settings import SettingsDialog, load_settings
 from updater import check_for_updates, perform_git_update
 
@@ -255,12 +254,10 @@ class MainApp(tk.Tk):
             ("Order List",   "\U0001f4cb", self._show_orders,         None),
             ("Import PDF",   "\u2b07",     self._import_pdf,          "import_pdf"),
             ("Import Excel", "\u2b07",     self._import_excel,        "import_pdf"),
-            ("Import Store", "\u2b07",     self._import_store_pdf,    "import_pdf"),
             ("Template",     "\u229e",     self._download_template,   "import_pdf"),
             ("Cut Off",      "\u29bf",     self._open_cutoff_mgr,     "manage_cutoff"),
             ("Fact/Merch",   "\u229e",     self._open_fact_merch,     "manage_cutoff"),
             ("Reports",      "\u22a1",     self._open_reports,        "export"),
-            ("Export Store", "\u22a1",     self._export_store_report, "export"),
             ("Backup",       "\U0001f4be", self._open_backup_manager, None),
             ("Settings",     "\u2699",     self._open_settings,       "manage_users"),
             ("Users",        "\u2295",     self._open_users,          "manage_users"),
@@ -328,19 +325,6 @@ class MainApp(tk.Tk):
 
         b_add = _mk_btn(tb, "\uff0b  Add Row", T["green"], "white", self._add_row, T["green2"])
         b_add.pack(side="left", padx=(8, 4))
-
-        act_f = tk.Frame(tb, bg=T["surf"])
-        act_f.pack(side="left")
-
-        tk.Button(act_f, text="\U0001f4ca  Breakdown", command=self._view_breakdown,
-                  bg=T["surf3"], fg=T["text"], font=(T["font"], 9, "bold"),
-                  activebackground=T["surf4"], activeforeground=T["text"],
-                  bd=0, cursor="hand2", padx=15, pady=8).pack(side="left", padx=5)
-        
-        tk.Button(act_f, text="\u2296  Delete Selected", command=self._delete_sel,
-                  bg=T["surf3"], fg=T["text"], font=(T["font"], 9, "bold"),
-                  activebackground=T["surf4"], activeforeground=T["text"],
-                  bd=0, cursor="hand2", padx=15, pady=8).pack(side="left", padx=5)
 
         tk.Checkbutton(tb, text=" Select All", variable=self._sel_all,
                        font=(T["font"], 9), fg=T["text"], bg=T["surf"],
@@ -873,26 +857,6 @@ class MainApp(tk.Tk):
         except Exception as e:
             ProToast(self, "error", "Template Error", f"Failed: {e}")
 
-    def _import_store_pdf(self):
-        """Handler for 'Size / Colour Breakdown - Store' PDF import."""
-        path = filedialog.askopenfilename(filetypes=[("PDF Files", "*.pdf")])
-        if not path: return
-        
-        self._stv.set("⏳ Parsing Store PDF...")
-        self.update()
-        
-        try:
-            new_records = extract_store_breakdown_records(path)
-            if not new_records:
-                ProToast(self, "warning", "No Data", "No valid breakdown data found in this PDF.")
-                self._stv.set("Ready")
-                return
-            
-            self._process_import_batch(new_records, "Store PDF Import")
-        except Exception as e:
-            messagebox.showerror("Import Error", f"Failed to parse Store PDF: {e}")
-            self._stv.set("Error")
-
     def _import_excel(self):
         f = filedialog.askopenfilename(title="Import Excel", filetypes=[("Excel", "*.xlsx *.xls")])
         if not f: return
@@ -1008,80 +972,6 @@ class MainApp(tk.Tk):
                      on_yes=_do_delete)
 
     def _open_reports(self):  ReportManager(self, self._orders)
-
-    def _export_store_report(self):
-        """Generates the specialized Tasniah Store Report (PDF)."""
-        sel = self.tree.selection()
-        # In the tree, we store IID which corresponds to index in self._orders (usually)
-        # But to be safe, we'll use the values to find the records.
-        recs_vals = [self.tree.item(i)["values"] for i in sel] if sel else []
-        
-        if not recs_vals:
-            if not messagebox.askyesno("Export All", "No rows selected. Export ALL visible rows?"):
-                return
-            recs_vals = [self.tree.item(i)["values"] for i in self.tree.get_children()]
-            
-        if not recs_vals:
-            ProToast(self, "warning", "No Data", "No records found to export.")
-            return
-
-        path = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF", "*.pdf")],
-                                             initialfile=f"Tasniah_Report_{datetime.now().strftime('%Y%m%d')}.pdf")
-        if not path: return
-
-        self._stv.set("⏳ Generating Store Report...")
-        self.update()
-
-        try:
-            export_data = []
-            for r_vals in recs_vals:
-                # Map back to self._orders
-                # COL_KEYS mapping:
-                # 0:order_no, 1:style_name, 6:colour, 9:country
-                ono, style, col, ctry = r_vals[0], r_vals[1], r_vals[6], r_vals[9]
-                for o in self._orders:
-                    if (str(o.get("order_no")) == str(ono) and 
-                        str(o.get("colour")) == str(col) and 
-                        str(o.get("country")) == str(ctry)):
-                        export_data.append(o)
-                        break
-
-            if not export_data:
-                ProToast(self, "error", "Mapping Error", "Could not map selected rows back to database records.")
-                return
-
-            export_store_pdf(export_data, path, self.app_settings)
-            self._stv.set("✓ Report exported")
-            ProToast(self, "success", "Export Successful", f"Report saved to:\n{path}")
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            messagebox.showerror("Export Error", f"Failed to generate report: {e}")
-            self._stv.set("Error")
-
-    def _view_breakdown(self):
-        """Opens the breakdown viewer for the selected row."""
-        sel = self.tree.selection()
-        if not sel:
-            ProToast(self, "info", "No Selection", "Please select a row to view its breakdown.")
-            return
-        
-        # Get the record from self._orders
-        r_vals = self.tree.item(sel[0])["values"]
-        ono, col, ctry = r_vals[0], r_vals[6], r_vals[9]
-        
-        target = None
-        for o in self._orders:
-            if (str(o.get("order_no")) == str(ono) and 
-                str(o.get("colour")) == str(col) and 
-                str(o.get("country")) == str(ctry)):
-                target = o
-                break
-        
-        if target:
-            BreakdownViewer(self, target)
-        else:
-            ProToast(self, "error", "Data Error", "Could not find the original record in the database.")
 
     def _open_cutoff_mgr(self):
         if not can(self.current_user, "manage_cutoff"):

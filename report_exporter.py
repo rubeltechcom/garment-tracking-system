@@ -10,30 +10,32 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
-def export_store_pdf(records, output_path, settings):
+def export_store_pdf(records, output_path, settings, group_by="order"):
     """
     Exports records to a specialized 'Tasniah Fabric Ltd' PDF report.
-    Groups data by Order No and Colour.
+    group_by: "order" (Order No + Colour) or "style" (Style Name + Colour)
     """
     # 1. Group records
     groups = {}
     for r in records:
-        key = (r.get("order_no", ""), r.get("colour", ""))
+        if group_by == "style":
+            key = (r.get("style_name", "Unknown Style"), r.get("colour", ""))
+        else:
+            key = (r.get("order_no", "Unknown Order"), r.get("colour", ""))
+            
         if key not in groups: groups[key] = []
         groups[key].append(r)
 
     c = canvas.Canvas(output_path, pagesize=landscape(A4))
     width, height = landscape(A4)
     
-    for (order_no, colour), group_recs in groups.items():
-        # Each group gets its own page(s)
-        # We'll assume a single page per group for now, or handle pagination
-        _draw_page(c, order_no, colour, group_recs, settings, width, height)
+    for (group_label, colour), group_recs in groups.items():
+        _draw_page(c, group_label, colour, group_recs, settings, width, height, group_by)
         c.showPage()
         
     c.save()
 
-def _draw_page(c, order_no, colour, records, settings, w, h):
+def _draw_page(c, group_label, colour, records, settings, w, h, group_by):
     # Company Header
     margin = 30
     curr_y = h - margin
@@ -67,9 +69,11 @@ def _draw_page(c, order_no, colour, records, settings, w, h):
     # Field Values (Left side)
     c.setFont("Helvetica", 10)
     c.drawString(margin + 80, curr_y - 15, "H&M")
-    c.drawString(margin + 80, curr_y - 30, order_no)
-    c.drawString(margin + 80, curr_y - 45, records[0].get("style_name", ""))
-    c.drawString(margin + 80, curr_y - 58, f"{records[0].get('total_order_qty', '0')}  Set")
+    c.drawString(margin + 80, curr_y - 30, group_label if group_by=="order" else records[0].get("order_no", ""))
+    c.drawString(margin + 80, curr_y - 45, group_label if group_by=="style" else records[0].get("style_name", ""))
+    
+    total_qty_sum = sum(int(r.get("order_qty", 0)) for r in records)
+    c.drawString(margin + 80, curr_y - 58, f"{total_qty_sum}  Set")
     
     # Right side fields
     c.setFont("Helvetica-Bold", 10)
