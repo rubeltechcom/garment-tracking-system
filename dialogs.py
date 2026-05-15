@@ -1611,3 +1611,73 @@ class UpdateReviewDialog(tk.Toplevel):
     def _confirm_update(self):
         self.destroy()
         if self.on_update: self.on_update()
+class BreakdownViewer(tk.Toplevel):
+    """Dialog to view the size-wise breakdown of an order."""
+    def __init__(self, parent, record):
+        super().__init__(parent)
+        self.title(f"Size Breakdown - {record.get('order_no')} ({record.get('country')})")
+        self.geometry("500x450"); self.configure(bg=T["bg"])
+        self.resizable(True, True); self.grab_set()
+        
+        tk.Frame(self, bg=T["accent"], height=3).pack(fill="x")
+        hdr = tk.Frame(self, bg=T["surf"]); hdr.pack(fill="x")
+        tk.Frame(hdr, bg=T["accent"], width=4).pack(side="left", fill="y")
+        tk.Label(hdr, text=f"  \U0001f4ca  BREAKDOWN: {record.get('colour')}",
+                 font=(T["mono"], 10, "bold"), fg=T["text"], bg=T["surf"]).pack(side="left", pady=12, padx=6)
+        
+        body = tk.Frame(self, bg=T["bg"], padx=20, pady=20)
+        body.pack(fill="both", expand=True)
+        
+        # Parse breakdown data
+        bd_str = record.get("breakdown", "{}")
+        try:
+            # Safely handle string representation of dict
+            import ast
+            bd = ast.literal_eval(bd_str)
+        except:
+            bd = {}
+            
+        if not bd:
+            tk.Label(body, text="No size breakdown data available for this record.",
+                     fg=T["muted"], bg=T["bg"], font=(T["font"], 10)).pack(pady=40)
+        else:
+            # Table Header
+            tbl_f = tk.Frame(body, bg=T["surf2"], bd=1, relief="flat")
+            tbl_f.pack(fill="both", expand=True)
+            
+            tree_f = tk.Frame(tbl_f, bg=T["surf2"])
+            tree_f.pack(fill="both", expand=True, padx=1, pady=1)
+            
+            style = ttk.Style()
+            style.configure("BD.Treeview", background=T["surf2"], foreground=T["text"], 
+                            fieldbackground=T["surf2"], rowheight=30, borderwidth=0)
+            style.map("BD.Treeview", background=[('selected', T["accent2"])])
+            
+            self.tree = ttk.Treeview(tree_f, columns=("Size", "Quantity"), show="headings", style="BD.Treeview")
+            self.tree.heading("Size", text="SIZE")
+            self.tree.heading("Quantity", text="QUANTITY")
+            self.tree.column("Size", width=250, anchor="w")
+            self.tree.column("Quantity", width=150, anchor="center")
+            
+            self.tree.pack(side="left", fill="both", expand=True)
+            
+            # Natural sorting for display
+            import re
+            def natural_key(string_):
+                return [int(s) if s.isdigit() else s.lower() for s in re.split(r'(\d+)', string_)]
+            
+            for sz in sorted(bd.keys(), key=natural_key):
+                self.tree.insert("", "end", values=(sz, bd[sz]))
+                
+            sb = ttk.Scrollbar(tree_f, orient="vertical", command=self.tree.yview)
+            self.tree.configure(yscrollcommand=sb.set)
+            sb.pack(side="right", fill="y")
+            
+            add_mouse_wheel(self.tree)
+            
+        btn_f = tk.Frame(self, bg=T["bg"], pady=15)
+        btn_f.pack(fill="x")
+        tk.Button(btn_f, text="CLOSE", command=self.destroy,
+                  bg=T["surf3"], fg=T["text"], font=(T["font"], 9, "bold"),
+                  activebackground=T["surf4"], activeforeground=T["text"],
+                  bd=0, cursor="hand2", padx=25, pady=8).pack()

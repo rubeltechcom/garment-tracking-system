@@ -14,7 +14,7 @@ from pdf_handler import extract_hm_records, extract_store_breakdown_records
 from export import export_excel
 from report_exporter import export_store_pdf
 from dashboard import DashboardFrame
-from dialogs import RowEditor, BulkEditor, CutoffManager, UserManager, ReportManager, FactoryMerchantManager, AdvancedSearchDialog, ProToast, show_confirm, ReviewUpdatesDialog, AuditLogViewerDialog, VersionHistoryDialog, UpdateReviewDialog
+from dialogs import RowEditor, BulkEditor, CutoffManager, UserManager, ReportManager, FactoryMerchantManager, AdvancedSearchDialog, ProToast, show_confirm, ReviewUpdatesDialog, AuditLogViewerDialog, VersionHistoryDialog, UpdateReviewDialog, BreakdownViewer
 from settings import SettingsDialog, load_settings
 from updater import check_for_updates, perform_git_update
 
@@ -328,6 +328,19 @@ class MainApp(tk.Tk):
 
         b_add = _mk_btn(tb, "\uff0b  Add Row", T["green"], "white", self._add_row, T["green2"])
         b_add.pack(side="left", padx=(8, 4))
+
+        act_f = tk.Frame(tb, bg=T["surf"])
+        act_f.pack(side="left")
+
+        tk.Button(act_f, text="\U0001f4ca  Breakdown", command=self._view_breakdown,
+                  bg=T["surf3"], fg=T["text"], font=(T["font"], 9, "bold"),
+                  activebackground=T["surf4"], activeforeground=T["text"],
+                  bd=0, cursor="hand2", padx=15, pady=8).pack(side="left", padx=5)
+        
+        tk.Button(act_f, text="\u2296  Delete Selected", command=self._delete_sel,
+                  bg=T["surf3"], fg=T["text"], font=(T["font"], 9, "bold"),
+                  activebackground=T["surf4"], activeforeground=T["text"],
+                  bd=0, cursor="hand2", padx=15, pady=8).pack(side="left", padx=5)
 
         tk.Checkbutton(tb, text=" Select All", variable=self._sel_all,
                        font=(T["font"], 9), fg=T["text"], bg=T["surf"],
@@ -1045,6 +1058,30 @@ class MainApp(tk.Tk):
             traceback.print_exc()
             messagebox.showerror("Export Error", f"Failed to generate report: {e}")
             self._stv.set("Error")
+
+    def _view_breakdown(self):
+        """Opens the breakdown viewer for the selected row."""
+        sel = self.tree.selection()
+        if not sel:
+            ProToast(self, "info", "No Selection", "Please select a row to view its breakdown.")
+            return
+        
+        # Get the record from self._orders
+        r_vals = self.tree.item(sel[0])["values"]
+        ono, col, ctry = r_vals[0], r_vals[6], r_vals[9]
+        
+        target = None
+        for o in self._orders:
+            if (str(o.get("order_no")) == str(ono) and 
+                str(o.get("colour")) == str(col) and 
+                str(o.get("country")) == str(ctry)):
+                target = o
+                break
+        
+        if target:
+            BreakdownViewer(self, target)
+        else:
+            ProToast(self, "error", "Data Error", "Could not find the original record in the database.")
 
     def _open_cutoff_mgr(self):
         if not can(self.current_user, "manage_cutoff"):

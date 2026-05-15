@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import ast
 from datetime import datetime
@@ -95,8 +96,11 @@ def _draw_page(c, order_no, colour, records, settings, w, h):
             all_sizes.update(bd.keys())
         except: pass
     
-    # Sort sizes (if they follow a pattern like numbers or ranges)
-    sorted_sizes = sorted(list(all_sizes))
+    # Sort sizes (Natural sorting)
+    def natural_key(string_):
+        return [int(s) if s.isdigit() else s.lower() for s in re.split(r'(\d+)', string_)]
+    
+    sorted_sizes = sorted(list(all_sizes), key=natural_key)
     
     # Table Headers
     cols = ["COUNTRY"] + sorted_sizes + ["CUT-OFF TOTAL", "CUT OFF", "SHIP DATE", "MODE"]
