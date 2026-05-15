@@ -275,34 +275,56 @@ def extract_store_breakdown_records(pdf_path):
                     # Actually, let's just use the codes as the "name" if we can't split safely.
                     color_names = [raw_names] # Fallback
             
-            # 4. Extract Quantities from Tables
+            # 4. Extract Quantities AND Sizes from Tables
             quantities = []
+            size_data = {} # {size_name: [qty_col1, qty_col2, ...]}
             tables = page.extract_tables()
             if tables:
                 for tbl in tables:
+                    # Look for size rows and the Quantity row
                     for row in tbl:
                         row_str = [str(c).strip() if c else "" for c in row]
+                        
+                        # Is it a size row? (e.g., "70 (68)*" or "4-6M (68)*")
+                        if re.match(r".+\(\d+\).*", row_str[0]):
+                            size_name = row_str[0].replace("*", "").strip()
+                            vals = []
+                            for cell in row_str[1:]:
+                                v = cell.replace(" ", "").replace(",", "").strip()
+                                # Keep it as a string, might be empty
+                                vals.append(v if v.isdigit() else "0")
+                            if any(int(v) > 0 for v in vals if v.isdigit()):
+                                size_data[size_name] = vals
+                        
                         if any("Quantity" in cell for cell in row_str):
-                            # Clean row to find numeric values
                             vals = []
                             for cell in row_str:
                                 v = cell.replace(" ", "").replace(",", "").strip()
                                 if v.isdigit() and int(v) > 0:
                                     vals.append(v)
-                            # If we found values, these are likely our quantities
                             if vals:
                                 quantities = vals
-                                break
-                    if quantities: break
+                                # We don't break yet because we might need more sizes
             
             # 5. Map and Build Records
-            # We match quantities to color codes by index
             for i, qty in enumerate(quantities):
                 if i < len(color_codes):
                     code = color_codes[i]
                     name = color_names[0] if len(color_names) == 1 else (color_names[i] if i < len(color_names) else "")
                     colour = f"{name} {code}".strip()
                     
+                    # Build size breakdown for this specific color column
+                    # Each color corresponds to an index in the size_data lists
+                    this_breakdown = {}
+                    for sz, q_list in size_data.items():
+                        # We need to find the correct index in q_list
+                        # Since quantities was built from row_str (all columns with digits), 
+                        # and size_data was built from row_str[1:], we need to align them.
+                        # Usually, the numeric values in Quantity: row correspond 1:1 to color columns.
+                        # Let's assume the alignment is correct by index.
+                        if i < len(q_list):
+                            this_breakdown[sz] = q_list[i]
+
                     rec = {
                         "order_no": order_no,
                         "style_name": style_name,
@@ -318,6 +340,7 @@ def extract_store_breakdown_records(pdf_path):
                         "total_order_qty": "",
                         "hm_merch": "", "hm_tech": "", "factory_merch": "",
                         "ship_qty_set": "", "carton_qty": "", "first_last": "", "shipped_status": "",
+                        "breakdown": str(this_breakdown), # Store as string representation
                     }
                     records.append(calculate_row(rec))
     

@@ -52,6 +52,7 @@ COLUMNS = [
     {"key":"week",            "label":"Week",               "type":"calc",    "width":68},
     {"key":"shipped_status",  "label":"Status",             "type":"status",  "width":110},
     {"key":"sales_mode",      "label":"Sales",              "type":"pdf_auto","width":60},
+    {"key":"breakdown",       "label":"Breakdown",          "type":"pdf_auto","width":0}, # Internal use
     {"key":"date_added",      "label":"Date Added",         "type":"auto",    "width":90},
     {"key":"added_by",        "label":"Added By",           "type":"auto",    "width":80},
 ]

@@ -12,6 +12,7 @@ from database import (db_load, db_save, auth_load, auth_verify,
 from logic import calculate_row, auto_first_last
 from pdf_handler import extract_hm_records, extract_store_breakdown_records
 from export import export_excel
+from report_exporter import export_store_pdf
 from dashboard import DashboardFrame
 from dialogs import RowEditor, BulkEditor, CutoffManager, UserManager, ReportManager, FactoryMerchantManager, AdvancedSearchDialog, ProToast, show_confirm, ReviewUpdatesDialog, AuditLogViewerDialog, VersionHistoryDialog, UpdateReviewDialog
 from settings import SettingsDialog, load_settings
@@ -259,6 +260,7 @@ class MainApp(tk.Tk):
             ("Cut Off",      "\u29bf",     self._open_cutoff_mgr,     "manage_cutoff"),
             ("Fact/Merch",   "\u229e",     self._open_fact_merch,     "manage_cutoff"),
             ("Reports",      "\u22a1",     self._open_reports,        "export"),
+            ("Export Store", "\u22a1",     self._export_store_report, "export"),
             ("Backup",       "\U0001f4be", self._open_backup_manager, None),
             ("Settings",     "\u2699",     self._open_settings,       "manage_users"),
             ("Users",        "\u2295",     self._open_users,          "manage_users"),
@@ -993,6 +995,56 @@ class MainApp(tk.Tk):
                      on_yes=_do_delete)
 
     def _open_reports(self):  ReportManager(self, self._orders)
+
+    def _export_store_report(self):
+        """Generates the specialized Tasniah Store Report (PDF)."""
+        sel = self.tree.selection()
+        # In the tree, we store IID which corresponds to index in self._orders (usually)
+        # But to be safe, we'll use the values to find the records.
+        recs_vals = [self.tree.item(i)["values"] for i in sel] if sel else []
+        
+        if not recs_vals:
+            if not messagebox.askyesno("Export All", "No rows selected. Export ALL visible rows?"):
+                return
+            recs_vals = [self.tree.item(i)["values"] for i in self.tree.get_children()]
+            
+        if not recs_vals:
+            ProToast(self, "warning", "No Data", "No records found to export.")
+            return
+
+        path = filedialog.asksaveasfilename(defaultextension=".pdf", filetypes=[("PDF", "*.pdf")],
+                                             initialfile=f"Tasniah_Report_{datetime.now().strftime('%Y%m%d')}.pdf")
+        if not path: return
+
+        self._stv.set("⏳ Generating Store Report...")
+        self.update()
+
+        try:
+            export_data = []
+            for r_vals in recs_vals:
+                # Map back to self._orders
+                # COL_KEYS mapping:
+                # 0:order_no, 1:style_name, 6:colour, 9:country
+                ono, style, col, ctry = r_vals[0], r_vals[1], r_vals[6], r_vals[9]
+                for o in self._orders:
+                    if (str(o.get("order_no")) == str(ono) and 
+                        str(o.get("colour")) == str(col) and 
+                        str(o.get("country")) == str(ctry)):
+                        export_data.append(o)
+                        break
+
+            if not export_data:
+                ProToast(self, "error", "Mapping Error", "Could not map selected rows back to database records.")
+                return
+
+            export_store_pdf(export_data, path, self.app_settings)
+            self._stv.set("✓ Report exported")
+            ProToast(self, "success", "Export Successful", f"Report saved to:\n{path}")
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            messagebox.showerror("Export Error", f"Failed to generate report: {e}")
+            self._stv.set("Error")
 
     def _open_cutoff_mgr(self):
         if not can(self.current_user, "manage_cutoff"):
