@@ -10,7 +10,8 @@ echo  ║   Setup - Run only once                        ║
 echo  ╚══════════════════════════════════════════════════╝
 echo.
 echo  Installing libraries...
-pip install pdfplumber openpyxl pandas fpdf tkcalendar matplotlib --quiet
+python -m pip install --upgrade pip --quiet
+python -m pip install pdfplumber openpyxl pandas fpdf tkcalendar matplotlib Pillow babel --quiet
 if %errorlevel% neq 0 (
     echo  [ERROR] Install failed!
     pause & exit /b 1
