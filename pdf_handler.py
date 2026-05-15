@@ -215,3 +215,108 @@ def extract_hm_records(bd_pdf, po_pdf):
             }
             records.append(calculate_row(row))
     return records
+
+def extract_store_breakdown_records(pdf_path):
+    """
+    Parses 'Size / Colour Breakdown - Store' PDF format.
+    Extracts data per page (usually one country per page).
+    """
+    records = []
+    order_no = style_name = season = ""
+    
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            txt = page.extract_text() or ""
+            
+            # Extract header info once
+            if not order_no:
+                m = re.search(r"Order No:\s*(\d{6}-\d{4})", txt)
+                if m: order_no = m.group(1)
+            if not style_name:
+                m = re.search(r"Product Name:\s*(.+)", txt)
+                if m: style_name = m.group(1).strip()
+            if not season:
+                m = re.search(r"Season:\s*(\d+-\d{4})", txt)
+                if m: season = m.group(1).strip()
+            
+            # Extract Country
+            # Format: Japan - JP (PM - IP)
+            country_code = ""
+            m_country = re.search(r"Size / Colour breakdown\n(.+)\s+-\s+([A-Z]{2})\s*\(", txt)
+            if m_country:
+                country_code = m_country.group(2)
+            
+            # Extract Table Data
+            tables = page.extract_tables()
+            if not tables: continue
+            
+            # We need to find the table that contains "Colour Name" and "Quantity"
+            for tbl in tables:
+                color_map = {} # col_index -> {code, name}
+                quantity_row = None
+                
+                for row_idx, row in enumerate(tbl):
+                    row_str = [str(c).strip() if c else "" for c in row]
+                    
+                    # Identify Color Columns
+                    if "Colour Name" in row_str:
+                        name_idx = row_str.index("Colour Name")
+                        # Codes are usually on the line above or below?
+                        # In the image: Article No, H&M Colour Code, Colour Name
+                        # Let's assume the table structure:
+                        # Row: Article No | 001 | 003
+                        # Row: H&M Colour Code | 76-137 | 17-213
+                        # Row: Colour Name | Blue Dark | Brown Dark
+                        
+                        # Find the color code row (usually a few rows above)
+                        code_row = None
+                        for i in range(max(0, row_idx-5), row_idx):
+                            r = [str(c).strip() if c else "" for c in tbl[i]]
+                            if "H&M Colour Code" in r:
+                                code_row = r; break
+                        
+                        for i, cell in enumerate(row_str):
+                            if i > 0 and cell:
+                                color_map[i] = {
+                                    "name": cell,
+                                    "code": code_row[i] if code_row and i < len(code_row) else ""
+                                }
+                    
+                    # Find Quantity Row under "Total" section
+                    # The image shows "Total" as a spanning header or section, 
+                    # and "Quantity" at the bottom of that section.
+                    if "Quantity" in row_str:
+                        # Safety: make sure it's the one under "Total" or at the bottom
+                        # Usually it's the last "Quantity" row in the table
+                        quantity_row = row_str
+                
+                if quantity_row and color_map and country_code:
+                    for col_idx, color_info in color_map.items():
+                        if col_idx < len(quantity_row):
+                            qty_str = quantity_row[col_idx].replace(" ", "").replace(",", "").strip()
+                            if qty_str.isdigit() and int(qty_str) > 0:
+                                colour = f"{color_info['name']} {color_info['code']}".strip()
+                                rec = {
+                                    "order_no": order_no,
+                                    "style_name": style_name,
+                                    "colour": colour,
+                                    "order_qty": qty_str,
+                                    "tod": "", # ToD is often missing in this breakdown PDF
+                                    "country": country_code,
+                                    "order_qty_set": qty_str,
+                                    "no_of_pcs": "",
+                                    "ship_mode": "SEA",
+                                    "season": season,
+                                    "sales_mode": "",
+                                    "total_order_qty": "",
+                                    "hm_merch": "", "hm_tech": "", "factory_merch": "",
+                                    "ship_qty_set": "", "carton_qty": "", "first_last": "", "shipped_status": "",
+                                }
+                                records.append(calculate_row(rec))
+    
+    # Post-process to set total_order_qty as sum of all colors
+    total_all = sum(int(r["order_qty"]) for r in records if r["order_qty"].isdigit())
+    for r in records:
+        r["total_order_qty"] = str(total_all)
+        
+    return records

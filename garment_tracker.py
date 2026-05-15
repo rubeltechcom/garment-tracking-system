@@ -10,7 +10,7 @@ from database import (db_load, db_save, auth_load, auth_verify,
                        backup_on_close, backup_manual, stop_scheduled_backup,
                        get_backup_info, BACKUP_DIR, log_action)
 from logic import calculate_row, auto_first_last
-from pdf_handler import extract_hm_records
+from pdf_handler import extract_hm_records, extract_store_breakdown_records
 from export import export_excel
 from dashboard import DashboardFrame
 from dialogs import RowEditor, BulkEditor, CutoffManager, UserManager, ReportManager, FactoryMerchantManager, AdvancedSearchDialog, ProToast, show_confirm, ReviewUpdatesDialog, AuditLogViewerDialog, VersionHistoryDialog, UpdateReviewDialog
@@ -254,6 +254,7 @@ class MainApp(tk.Tk):
             ("Order List",   "\U0001f4cb", self._show_orders,         None),
             ("Import PDF",   "\u2b07",     self._import_pdf,          "import_pdf"),
             ("Import Excel", "\u2b07",     self._import_excel,        "import_pdf"),
+            ("Import Store", "\u2b07",     self._import_store_pdf,    "import_pdf"),
             ("Template",     "\u229e",     self._download_template,   "import_pdf"),
             ("Cut Off",      "\u29bf",     self._open_cutoff_mgr,     "manage_cutoff"),
             ("Fact/Merch",   "\u229e",     self._open_fact_merch,     "manage_cutoff"),
@@ -856,6 +857,26 @@ class MainApp(tk.Tk):
             ProToast(self, "success", "Template Saved", f"Template saved to:\n{path}")
         except Exception as e:
             ProToast(self, "error", "Template Error", f"Failed: {e}")
+
+    def _import_store_pdf(self):
+        """Handler for 'Size / Colour Breakdown - Store' PDF import."""
+        path = filedialog.askopenfilename(filetypes=[("PDF Files", "*.pdf")])
+        if not path: return
+        
+        self._stv.set("⏳ Parsing Store PDF...")
+        self.update()
+        
+        try:
+            new_records = extract_store_breakdown_records(path)
+            if not new_records:
+                ProToast(self, "warning", "No Data", "No valid breakdown data found in this PDF.")
+                self._stv.set("Ready")
+                return
+            
+            self._process_import_batch(new_records, "Store PDF Import")
+        except Exception as e:
+            messagebox.showerror("Import Error", f"Failed to parse Store PDF: {e}")
+            self._stv.set("Error")
 
     def _import_excel(self):
         f = filedialog.askopenfilename(title="Import Excel", filetypes=[("Excel", "*.xlsx *.xls")])
