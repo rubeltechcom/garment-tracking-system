@@ -1105,6 +1105,11 @@ class MainApp(tk.Tk):
         backup_on_close()
         self.destroy()
 
+    def _logout(self):
+        if messagebox.askyesno("Logout", "Are you sure you want to log out?", parent=self):
+            self.wants_logout = True
+            self._on_close()
+
 
     def _prompt_update(self, remote_v, remote_cl):
         """Show the professional review dialog before updating."""
@@ -1126,8 +1131,14 @@ class MainApp(tk.Tk):
 
 
 if __name__ == "__main__":
-    login = LoginWindow()
-    login.mainloop()
-    if login.logged_in:
+    while True:
+        login = LoginWindow()
+        login.mainloop()
+        if not login.logged_in: break
+        
         app = MainApp(login.logged_in)
+        app.wants_logout = False
         app.mainloop()
+        
+        if not getattr(app, "wants_logout", False):
+            break
