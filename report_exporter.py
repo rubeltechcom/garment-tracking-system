@@ -137,13 +137,25 @@ def _draw_page(c, order_no, colour, records, settings, w, h):
     
     # Draw Table
     # Calculate column widths
-    cw = [100] # Country
+    cw = [70] # Country (narrower)
     num_sizes = len(sorted_sizes)
     # Available width for sizes and other cols
-    rem_w = w - 2*margin - 100 - 80 - 70 - 80 - 50
-    size_w = rem_w / num_sizes if num_sizes > 0 else 40
+    # w is ~842 for A4 landscape. margin is 30. rem_w = 842 - 60 - 70 - 70 - 60 - 70 - 40 = 472
+    rem_w = w - 2*margin - 70 - 70 - 60 - 70 - 40 
+    size_w = max(25, rem_w / num_sizes) if num_sizes > 0 else 40
     for _ in sorted_sizes: cw.append(size_w)
-    cw += [80, 70, 80, 50] # CUT-OFF TOTAL, CUT OFF, SHIP DATE, MODE
+    cw += [70, 60, 70, 40] # CUT-OFF TOTAL, CUT OFF, SHIP DATE, MODE
+    
+    # We'll use Paragraphs for headers to allow wrapping or smaller fonts
+    header_style = ParagraphStyle('Hdr', fontName='Helvetica-Bold', fontSize=7, alignment=1, leading=8)
+    styled_headers = [Paragraph(cols[0], header_style)]
+    for sz in sorted_sizes:
+        # If size name is long, it will wrap
+        styled_headers.append(Paragraph(sz, header_style))
+    for h in cols[num_sizes+1:]:
+        styled_headers.append(Paragraph(h, header_style))
+    
+    data[0] = styled_headers
     
     t = Table(data, colWidths=cw, repeatRows=1)
     
@@ -152,20 +164,19 @@ def _draw_page(c, order_no, colour, records, settings, w, h):
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1E3A8A")), # Navy Header
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 9),
-        ('FONTSIZE', (0, 1), (-1, -1), 8),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('FONTSIZE', (0, 1), (-1, -1), 7),
     ]
     
     # Highlight Totals rows
     for i, row in enumerate(data):
-        if "Sub Total=" in row[0]:
-            ts.append(('BACKGROUND', (0, i), (-1, i), colors.HexColor("#60A5FA"))) # Light Blue
+        if i == 0: continue
+        if str(row[0]).startswith("Sub Total="):
+            ts.append(('BACKGROUND', (0, i), (-1, i), colors.HexColor("#60A5FA")))
             ts.append(('FONTNAME', (0, i), (-1, i), 'Helvetica-Bold'))
-        elif "Cut Off Total=" in row[0]:
-            ts.append(('BACKGROUND', (0, i), (-1, i), colors.HexColor("#93C5FD"))) # Lighter Blue
+        elif str(row[0]).startswith("Cut Off Total="):
+            ts.append(('BACKGROUND', (0, i), (-1, i), colors.HexColor("#93C5FD")))
             ts.append(('FONTNAME', (0, i), (-1, i), 'Helvetica-Bold'))
             
     t.setStyle(TableStyle(ts))
