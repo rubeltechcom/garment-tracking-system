@@ -26,7 +26,7 @@ class DashboardFrame(tk.Frame):
         hdr.pack(fill="x"); hdr.pack_propagate(False)
         tk.Frame(hdr, bg=T["accent"], width=4).pack(side="left", fill="y")
         tk.Label(hdr, text="  \U0001f4ca  ANALYTICS DASHBOARD",
-                 font=(T["mono"], 10, "bold"), fg=T["text"],
+                 font=(T["font"], 11, "bold"), fg=T["text"],
                  bg=T["surf"]).pack(side="left", padx=6)
         tk.Label(hdr, text="Scroll for Trends & Distribution",
                  font=(T["font"], 8), fg=T["muted"],
@@ -288,9 +288,9 @@ class DashboardFrame(tk.Frame):
 
         # Center percentage text
         canvas.create_text(cx, cy - 8, text=f"{pct}%",
-                           font=(T["mono"], 22, "bold"), fill=pct_col)
-        canvas.create_text(cx, cy + 16, text="Completed",
-                           font=(T["font"], 8), fill=T["muted"])
+                           font=(T["font"], 24, "bold"), fill=pct_col)
+        canvas.create_text(cx, cy + 18, text="Completed",
+                           font=(T["font"], 9), fill=T["muted"])
 
         # ── Hover tooltip for donut segments ──────────────────────────────
         tooltip_win = None
@@ -379,7 +379,7 @@ class DashboardFrame(tk.Frame):
                      font=(T["font"], 7, "bold"), fg=T["muted"],
                      bg=bg_col).pack(side="left", pady=(3, 0))
             tk.Label(cf, text=str(val),
-                     font=(T["mono"], 24, "bold"), fg=color,
+                     font=(T["font"], 28, "bold"), fg=color,
                      bg=bg_col).pack(anchor="w", pady=(4, 0))
 
     # ── Treeview builder ──────────────────────────────────────────────────────
@@ -387,11 +387,11 @@ class DashboardFrame(tk.Frame):
         s = ttk.Style()
         s.configure(f"{style_name}.Treeview",
                     background=T["surf2"], foreground=T["text"],
-                    fieldbackground=T["surf2"], rowheight=26,
-                    font=(T["mono"], 8))
+                    fieldbackground=T["surf2"], rowheight=28,
+                    font=(T["font"], 9))
         s.configure(f"{style_name}.Treeview.Heading",
                     background=T["surf3"], foreground=T["muted"],
-                    font=(T["font"], 8, "bold"), relief="flat")
+                    font=(T["font"], 9, "bold"), relief="flat")
         s.map(f"{style_name}.Treeview",
               background=[("selected", T["accent3"])],
               foreground=[("selected", "white")])

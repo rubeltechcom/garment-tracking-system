@@ -136,8 +136,8 @@ class SettingsDialog(tk.Toplevel):
 
     def _build_alert_section(self):
         f = self._section("🔔  SHIPMENT ALERTS", T["purple"])
-        tk.Label(f, text="Alert Lead Time (Days)", font=(T["font"], 9, "bold"), fg=T["text"], bg=T["surf2"]).pack(anchor="w")
-        _mk_entry(f, self._reminder_days, width=10).pack(anchor="w", pady=(4, 0))
+        tk.Label(f, text="Alert Lead Time (Days)", font=(T["font"], 10, "bold"), fg=T["text"], bg=T["surf2"]).pack(anchor="w")
+        _mk_entry(f, self._reminder_days, width=12).pack(anchor="w", pady=(6, 0))
         tk.Label(f, text="System will remind you X days before ToD.", font=(T["font"], 8), fg=T["muted"], bg=T["surf2"]).pack(anchor="w", pady=4)
 
     def _build_export_section(self):
@@ -184,11 +184,11 @@ class SettingsDialog(tk.Toplevel):
 
     # ── Logic ──────────────────────────────────────────────────────────────────
     def _section(self, title, color):
-        s = tk.Frame(self.body, bg=T["bg"]); s.pack(fill="x", padx=12, pady=(16, 2))
-        tk.Frame(s, bg=color, width=3, height=20).pack(side="left", padx=(0, 8))
-        tk.Label(s, text=title, font=(T["font"], 10, "bold"), fg=color, bg=T["bg"]).pack(side="left")
-        f = tk.Frame(self.body, bg=T["surf2"], padx=20, pady=16)
-        f.pack(fill="x", padx=12, pady=(0, 8))
+        s = tk.Frame(self.body, bg=T["bg"]); s.pack(fill="x", padx=14, pady=(20, 2))
+        tk.Frame(s, bg=color, width=4, height=22).pack(side="left", padx=(0, 10))
+        tk.Label(s, text=title, font=(T["font"], 11, "bold"), fg=color, bg=T["bg"]).pack(side="left")
+        f = tk.Frame(self.body, bg=T["surf2"], padx=24, pady=20)
+        f.pack(fill="x", padx=14, pady=(0, 10))
         return f
 
     def _save(self):

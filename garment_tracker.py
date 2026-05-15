@@ -51,11 +51,11 @@ def apply_global_style():
     # Main Treeview
     s.configure("Main.Treeview",
                 background=T["surf2"], foreground=T["text"],
-                fieldbackground=T["surf2"], rowheight=26,
-                font=(T["mono"], 8))
+                fieldbackground=T["surf2"], rowheight=30,
+                font=(T["font"], 10))
     s.configure("Main.Treeview.Heading",
                 background=T["surf3"], foreground=T["muted"],
-                font=(T["font"], 8, "bold"), relief="flat", borderwidth=0)
+                font=(T["font"], 10, "bold"), relief="flat", borderwidth=0)
     s.map("Main.Treeview",
           background=[("selected", T["accent3"])],
           foreground=[("selected", "white")])
@@ -63,7 +63,7 @@ def apply_global_style():
           background=[("active", T["surf4"])])
 
 
-def _mk_btn(parent, text, bg, fg, cmd, hover_bg=None, font_size=9, padx=14, pady=6):
+def _mk_btn(parent, text, bg, fg, cmd, hover_bg=None, font_size=10, padx=14, pady=6):
     """Reusable modern flat button with hover."""
     hbg = hover_bg or bg
     b = tk.Button(parent, text=text, font=(T["font"], font_size, "bold"),
@@ -126,15 +126,15 @@ class LoginWindow(tk.Tk):
         # Thin divider
         tk.Frame(self, bg=T["border"], height=1).pack(fill="x", padx=30)
 
-        # Card
-        card = tk.Frame(self, bg=T["surf"], padx=36, pady=28)
-        card.pack(fill="x", padx=30, pady=24)
+        # Card - Modern 'Glass' look
+        card = tk.Frame(self, bg=T["surf"], padx=40, pady=32)
+        card.pack(fill="x", padx=30, pady=28)
 
         self._uv = tk.StringVar()
         self._pv = tk.StringVar()
         for lbl, var, show in [("USERNAME", self._uv, ""), ("PASSWORD", self._pv, "•")]:
-            tk.Label(card, text=lbl, font=(T["font"], 8, "bold"),
-                     fg=T["accent"], bg=T["surf"], anchor="w").pack(fill="x", pady=(10, 3))
+            tk.Label(card, text=lbl, font=(T["font"], 9, "bold"),
+                     fg=T["accent"], bg=T["surf"], anchor="w").pack(fill="x", pady=(12, 4))
             fr, ent = styled_entry(card, var, width=28, show=show if show != "•" else "*")
             fr.pack(fill="x")
             if show != "":
@@ -153,8 +153,8 @@ class LoginWindow(tk.Tk):
         # Login button — full width accent
         btn_f = tk.Frame(self, bg=T["bg"])
         btn_f.pack(fill="x", padx=30)
-        btn = tk.Button(btn_f, text="SIGN  IN  →",
-                        font=(T["font"], 11, "bold"),
+        btn = tk.Button(btn_f, text="SIGN IN  →",
+                        font=(T["font"], 12, "bold"),
                         bg=T["accent"], fg="white", relief="flat", bd=0,
                         pady=12, cursor="hand2",
                         activebackground=T["accent2"], activeforeground="white",
@@ -229,21 +229,21 @@ class MainApp(tk.Tk):
                  font=(T["font"], 8), fg=T["muted"], bg=T["surf"]).pack(side="left")
         
         # Version Link
-        v_btn = tk.Button(lf, text=f"v{VERSION}", font=(T["mono"], 7, "bold"),
+        v_btn = tk.Button(lf, text=f"v{VERSION}", font=(T["mono"], 8, "bold"),
                           fg=T["accent"], bg=T["surf"], relief="flat", bd=0,
                           cursor="hand2", command=self._show_version_history)
-        v_btn.pack(side="left", padx=10)
+        v_btn.pack(side="left", padx=12)
         bind_hover(v_btn, T["surf"], T["surf2"], T["accent"], "white")
         # Right: user badge chip
         role = self.current_user["role"]
         ri_col = {"admin": T["red"], "manager": T["gold"], "user": T["green"]}.get(role, T["muted"])
-        badge_f = tk.Frame(hdr, bg=T["surf3"], padx=16)
+        badge_f = tk.Frame(hdr, bg=T["surf3"], padx=20)
         badge_f.pack(side="right", padx=18, fill="y")
-        tk.Label(badge_f, text="\u25cf", font=(T["font"], 12), fg=ri_col, bg=T["surf3"]).pack(side="left", padx=(0, 8), pady=18)
+        tk.Label(badge_f, text="\u25cf", font=(T["font"], 14), fg=ri_col, bg=T["surf3"]).pack(side="left", padx=(0, 10), pady=18)
         tk.Label(badge_f, text=f"{self.current_user['name']}",
-                 font=(T["font"], 9, "bold"), fg=T["text"], bg=T["surf3"]).pack(side="left")
+                 font=(T["font"], 10, "bold"), fg=T["text"], bg=T["surf3"]).pack(side="left")
         tk.Label(badge_f, text=f"  [{role.upper()}]",
-                 font=(T["font"], 8), fg=T["muted"], bg=T["surf3"]).pack(side="left")
+                 font=(T["font"], 9), fg=T["muted"], bg=T["surf3"]).pack(side="left")
 
         # ── Nav bar ───────────────────────────────────────────────────────────
         nav_f = tk.Frame(self, bg=T["surf"], height=42)
@@ -272,7 +272,7 @@ class MainApp(tk.Tk):
             nhov   = T["red_bg"] if is_logout else T["nav_hover"]
             nfghov = T["red"]    if is_logout else T["text"]
             b = tk.Button(nav_f, text=f"  {icon}  {label}  ",
-                          font=(T["font"], 8, "bold"),
+                          font=(T["font"], 9, "bold"),
                           bg=nbg, fg=nfg, relief="flat", bd=0,
                           padx=4, pady=0, cursor="hand2",
                           activebackground=nhov, activeforeground=nfghov,

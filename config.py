@@ -62,59 +62,54 @@ SHIPPED_DONE    = {"Shipped","Cancelled"}
 
 # ── Premium deep-navy dark theme ─────────────────────────────────────────────
 T = {
-    # Backgrounds — deep slate-navy
-    "bg":       "#0C0E14",
-    "surf":     "#111520",
-    "surf2":    "#161B2A",
-    "surf3":    "#1C2235",
-    "surf4":    "#222A40",
-    "border":   "#2A3350",
-    "border2":  "#344060",
+    # Backgrounds — Deep, modern darks
+    "bg":       "#010409",  # Deepest Black
+    "surf":     "#0D1117",  # Modern Surface
+    "surf2":    "#161B22",  # Secondary Surface
+    "surf3":    "#21262D",  # Tertiary Surface
+    "surf4":    "#30363D",  # Hover / Active Surface
+    "border":   "#30363D",  # Subtle Border
+    "border2":  "#484F58",  # High-Visibility Border
 
-    # Text
-    "text":     "#E8EDF8",
-    "muted":    "#6A7590",
-    "dim":      "#3A4260",
+    # Text — Pure white and high-contrast grays
+    "text":     "#FFFFFF",  # Pure White for readability
+    "muted":    "#8B949E",  # Muted Gray
+    "dim":      "#484F58",  # Dim Gray
 
-    # Brand accent — electric blue-indigo
-    "accent":   "#4F7EFF",
-    "accent2":  "#3A66E0",
-    "accent3":  "#2A4EC0",
+    # Brand accent — Electric Blue & Teal
+    "accent":   "#58A6FF",  # Electric Blue
+    "accent2":  "#1F6FEB",  # Strong Blue
+    "accent3":  "#1158C7",  # Deep Blue
 
-    # Semantic colours
-    "green":    "#22C55E",
-    "green2":   "#16A34A",
+    # Semantic colours — Vibrant Status
+    "green":    "#3FB950",  # Success Green
+    "green2":   "#2EA043",  # Strong Green
     "green_bg": "#0D2418",
-    "red":      "#EF4444",
-    "red2":     "#DC2626",
+    "red":      "#F85149",  # Danger Red
+    "red2":     "#DA3633",  # Strong Red
     "red_bg":   "#260D0D",
-    "gold":     "#F59E0B",
-    "gold2":    "#D97706",
+    "gold":     "#D29922",  # Warning Gold
+    "gold2":    "#BB8009",  # Strong Gold
     "gold_bg":  "#251A05",
-    "blue":     "#3B82F6",
-    "blue2":    "#2563EB",
+    "blue":     "#58A6FF",
+    "blue2":    "#1F6FEB",
     "blue_bg":  "#0A1530",
-    "purple":   "#A855F7",
-    "purple2":  "#9333EA",
+    "purple":   "#BC8CFF",
+    "purple2":  "#A371F7",
     "purple_bg":"#160A24",
-    "teal":     "#14B8A6",
-    "teal2":    "#0D9488",
-    "orange":   "#F97316",
+    "teal":     "#39D353",  # Neon Green/Teal
+    "teal2":    "#26A641",
+    "orange":   "#FF7B72",
+    "nav_btn":    "#0D1117",
+    "nav_hover":  "#21262D",
+    "nav_active": "#58A6FF",
 
-    # ── Backward-compatible aliases (do NOT remove) ──────────────────────────
-    "yellow":   "#F59E0B",   # was gold-yellow
-    "dim":      "#3A4260",   # was dim text
-    "accent2":  "#3A66E0",   # was darker accent
-    "green2":   "#16A34A",   # was darker green  (already defined, alias safe)
-    "blue2":    "#2563EB",   # was darker blue    (already defined, alias safe)
-    "nav_active": "#4F7EFF", # was nav active color
-
-    # Nav
-    "nav_btn":    "#111520",
-    "nav_hover":  "#1C2235",
-    "nav_active": "#4F7EFF",
-
-    # Fonts
+    # Glass / Transparency (Simulated)
+    "glass":      "#0D1117CC", # 80% opacity
+    "glass_hov":  "#21262DCC",
+    "glass_act":  "#30363DCC",
+    
+    # Fonts — Modern UI Stack
     "font":   "Segoe UI",
     "mono":   "Consolas",
 }

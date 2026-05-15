@@ -27,11 +27,11 @@ def add_mouse_wheel(widget, canvas):
 class ProToast(tk.Toplevel):
     """Premium dark-themed confirmation / info / warning / error popup."""
     _PRESETS = {
-        "success":  {"icon": "✓", "accent": "#22C55E", "bg_tint": "#0D2418"},
-        "info":     {"icon": "ℹ", "accent": "#3B82F6", "bg_tint": "#0A1530"},
-        "warning":  {"icon": "⚠", "accent": "#F59E0B", "bg_tint": "#251A05"},
-        "error":    {"icon": "✗", "accent": "#EF4444", "bg_tint": "#260D0D"},
-        "confirm":  {"icon": "?", "accent": "#F59E0B", "bg_tint": "#251A05"},
+        "success":  {"icon": "✓", "accent": "#3FB950", "bg_tint": "#0D1117"},
+        "info":     {"icon": "ℹ", "accent": "#58A6FF", "bg_tint": "#0D1117"},
+        "warning":  {"icon": "⚠", "accent": "#D29922", "bg_tint": "#0D1117"},
+        "error":    {"icon": "✗", "accent": "#F85149", "bg_tint": "#0D1117"},
+        "confirm":  {"icon": "?", "accent": "#58A6FF", "bg_tint": "#0D1117"},
     }
 
     def __init__(self, parent, mode, title, message, on_yes=None, on_no=None):
