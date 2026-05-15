@@ -1,0 +1,24 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Data and auth files
+garment_data.sqlite
+garment_data.dat
+auth.dat
+remember.dat
+licenses.json
+
+# Directories
+backups/
+logs/
+exports/
+update_temp/
+scratch/
+
+# OS/IDE files
+.vscode/
+.idea/
+.DS_Store
+crash_log.txt

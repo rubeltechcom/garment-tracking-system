@@ -23,7 +23,6 @@ _DEFAULTS = {
     "theme":           "dark",
     "show_default_creds": True,
     "reminder_days":   7,
-    "license_key":     "NONE",
 }
 
 def load_settings() -> dict:
@@ -60,7 +59,6 @@ class SettingsDialog(tk.Toplevel):
         self._logo_path_var = tk.StringVar(value=self.settings.get("logo_path", ""))
         self._export_dir_var = tk.StringVar(value=self.settings.get("export_dir", ""))
         self._reminder_days = tk.StringVar(value=str(self.settings.get("reminder_days", 7)))
-        self._license_key_var = tk.StringVar(value=self.settings.get("license_key", "NONE"))
         
         self._build()
 
@@ -98,7 +96,6 @@ class SettingsDialog(tk.Toplevel):
 
         # Build Sections in Order
         self._build_company_section()
-        self._build_licensing_section()
         self._build_alert_section()
         self._build_export_section()
         self._build_version_section()
@@ -122,20 +119,6 @@ class SettingsDialog(tk.Toplevel):
         self._logo_preview.pack(anchor="w", pady=6, ipadx=10, ipady=10)
         self._refresh_logo_preview()
 
-    def _build_licensing_section(self):
-        f = self._section("🔒  LICENSE & DEVICE BINDING", T["accent"])
-        from updater import get_hwid
-        
-        tk.Label(f, text="Your Device ID (Send to Admin)", font=(T["font"], 8, "bold"), fg=T["muted"], bg=T["surf2"]).pack(anchor="w")
-        hwid_f = tk.Frame(f, bg=T["surf3"], padx=10, pady=6)
-        hwid_f.pack(fill="x", pady=(4, 10))
-        try: cur_id = get_hwid()
-        except: cur_id = "GT-ERR-HWID"
-        tk.Label(hwid_f, text=cur_id, font=(T["mono"], 10, "bold"), fg=T["accent"], bg=T["surf3"]).pack(side="left")
-        
-        tk.Label(f, text="Enter License Key", font=(T["font"], 9, "bold"), fg=T["text"], bg=T["surf2"]).pack(anchor="w")
-        _mk_entry(f, self._license_key_var).pack(fill="x", pady=(4, 0))
-
     def _build_alert_section(self):
         f = self._section("🔔  SHIPMENT ALERTS", T["purple"])
         tk.Label(f, text="Alert Lead Time (Days)", font=(T["font"], 9, "bold"), fg=T["text"], bg=T["surf2"]).pack(anchor="w")
@@ -157,20 +140,17 @@ class SettingsDialog(tk.Toplevel):
         _mk_btn(f, "What's New", T["purple_bg"], T["purple"], lambda: VersionHistoryDialog(self), T["surf4"], size=8).pack(side="right")
         
         def check_upd():
-            self._status_var.set("⏳ Validating...")
+            self._status_var.set("⏳ Checking...")
             from updater import check_for_updates
             import threading
-            lkey = self._license_key_var.get().strip()
             def worker():
-                upd, v, cl = check_for_updates(lkey)
+                upd, v, cl = check_for_updates()
                 if upd:
                     self.after(0, lambda: self._status_var.set(f"🚀 v{v} available!"))
                     if hasattr(self.master, "_prompt_update"): self.after(0, lambda: self.master._prompt_update(v, cl))
-                elif v is None and cl and cl.startswith("LICENSE_ERROR"):
-                    self.after(0, lambda: self._status_var.set("⚠ " + cl.replace("LICENSE_ERROR: ","")))
                 else: self.after(0, lambda: self._status_var.set("✓ Up to date"))
             threading.Thread(target=worker, daemon=True).start()
-        _mk_btn(f, "Check for Updates", T["surf3"], T["text"], check_upd, T["surf4"], size=8).pack(side="right", padx=10)
+        _mk_btn(f, "  Check for Updates  ", T["accent"], "white", check_upd, T["accent2"], size=8).pack(side="right", padx=10)
 
     def _build_restore_section(self):
         f = self._section("🔄  RESTORE DATABASE", T["teal"])
@@ -203,7 +183,6 @@ class SettingsDialog(tk.Toplevel):
             self.settings["logo_path"] = self._logo_path_var.get()
             self.settings["export_dir"] = self._export_dir_var.get()
             self.settings["reminder_days"] = int(self._reminder_days.get() or "7")
-            self.settings["license_key"] = self._license_key_var.get()
             
             save_settings(self.settings)
             self._status_var.set("✅ SAVED!")
