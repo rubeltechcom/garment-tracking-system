@@ -242,68 +242,66 @@ def extract_store_breakdown_records(pdf_path):
             # Extract Country
             # Format: Japan - JP (PM - IP)
             country_code = ""
-            m_country = re.search(r"Size / Colour breakdown\n(.+)\s+-\s+([A-Z]{2})\s*\(", txt)
+            # More flexible search for the breakdown header and country line
+            m_country = re.search(r"Size / Colour breakdown\s*\n?\s*(.+)\s+-\s+([A-Z]{2})\s*\(", txt, re.IGNORECASE)
             if m_country:
                 country_code = m_country.group(2)
+            else:
+                # Fallback: just look for the pattern "Name - XX ("
+                m_fallback = re.search(r"([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+-\s+([A-Z]{2})\s*\(", txt)
+                if m_fallback:
+                    country_code = m_fallback.group(2)
             
             # Extract Table Data
             tables = page.extract_tables()
             if not tables: continue
             
-            # We need to find the table that contains "Colour Name" and "Quantity"
             for tbl in tables:
                 color_map = {} # col_index -> {code, name}
                 quantity_row = None
                 
-                for row_idx, row in enumerate(tbl):
-                    row_str = [str(c).strip() if c else "" for c in row]
-                    
+                # Normalize table rows: strip and handle None
+                clean_tbl = []
+                for row in tbl:
+                    clean_tbl.append([str(c).strip() if c else "" for c in row])
+                
+                for row_idx, row_str in enumerate(clean_tbl):
                     # Identify Color Columns
-                    if "Colour Name" in row_str:
-                        name_idx = row_str.index("Colour Name")
-                        # Codes are usually on the line above or below?
-                        # In the image: Article No, H&M Colour Code, Colour Name
-                        # Let's assume the table structure:
-                        # Row: Article No | 001 | 003
-                        # Row: H&M Colour Code | 76-137 | 17-213
-                        # Row: Colour Name | Blue Dark | Brown Dark
-                        
-                        # Find the color code row (usually a few rows above)
+                    if any("Colour Name" in cell for cell in row_str):
+                        # Find the color code row (usually 1-2 rows above)
                         code_row = None
-                        for i in range(max(0, row_idx-5), row_idx):
-                            r = [str(c).strip() if c else "" for c in tbl[i]]
-                            if "H&M Colour Code" in r:
-                                code_row = r; break
+                        for i in range(max(0, row_idx-3), row_idx):
+                            if any("Colour Code" in c for c in clean_tbl[i]):
+                                code_row = clean_tbl[i]; break
                         
                         for i, cell in enumerate(row_str):
-                            if i > 0 and cell:
+                            # Skip the first column (labels)
+                            if i > 0 and cell and cell.lower() != "colour name":
                                 color_map[i] = {
                                     "name": cell,
                                     "code": code_row[i] if code_row and i < len(code_row) else ""
                                 }
                     
-                    # Find Quantity Row under "Total" section
-                    # The image shows "Total" as a spanning header or section, 
-                    # and "Quantity" at the bottom of that section.
-                    if "Quantity" in row_str:
-                        # Safety: make sure it's the one under "Total" or at the bottom
-                        # Usually it's the last "Quantity" row in the table
+                    # Find Quantity Row - specifically the one that has numbers matching our colors
+                    if any("Quantity" in cell for cell in row_str):
+                        # We want the one that likely corresponds to the Total section
+                        # (Usually the last one or one with large numbers)
                         quantity_row = row_str
                 
                 if quantity_row and color_map and country_code:
                     for col_idx, color_info in color_map.items():
                         if col_idx < len(quantity_row):
-                            qty_str = quantity_row[col_idx].replace(" ", "").replace(",", "").strip()
-                            if qty_str.isdigit() and int(qty_str) > 0:
+                            qty_val = quantity_row[col_idx].replace(" ", "").replace(",", "").strip()
+                            if qty_val.isdigit() and int(qty_val) > 0:
                                 colour = f"{color_info['name']} {color_info['code']}".strip()
                                 rec = {
                                     "order_no": order_no,
                                     "style_name": style_name,
                                     "colour": colour,
-                                    "order_qty": qty_str,
-                                    "tod": "", # ToD is often missing in this breakdown PDF
+                                    "order_qty": qty_val,
+                                    "tod": "", 
                                     "country": country_code,
-                                    "order_qty_set": qty_str,
+                                    "order_qty_set": qty_val,
                                     "no_of_pcs": "",
                                     "ship_mode": "SEA",
                                     "season": season,
