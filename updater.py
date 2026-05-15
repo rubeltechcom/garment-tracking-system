@@ -7,7 +7,7 @@ import re
 import shutil
 import subprocess
 import hashlib
-from config import VERSION, BASE_DIR, GITHUB_TOKEN, REPO_OWNER, REPO_NAME
+from config import VERSION, BASE_DIR, REPO_OWNER, REPO_NAME
 
 def get_hwid():
     """Generates a unique hardware ID for the current PC."""

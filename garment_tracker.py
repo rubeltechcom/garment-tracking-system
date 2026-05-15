@@ -413,6 +413,12 @@ class MainApp(tk.Tk):
         self.tree.pack(fill="both", expand=True)
         self.tree.bind("<Double-1>", lambda _: self._edit_row())
         self.tree.bind("<<TreeviewSelect>>", self._on_sel)
+
+        # Mousewheel support
+        def _on_mousewheel(event):
+            self.tree.yview_scroll(int(-1*(event.delta/120)), "units")
+        self.tree.bind("<MouseWheel>", _on_mousewheel)
+
         # Status tags — navy palette
         # Status tags — robust visibility
         self.tree.tag_configure("shipped",   background="#1B4D2E", foreground="#A5F3BC") # Light Green Tint
@@ -785,36 +791,6 @@ class MainApp(tk.Tk):
         else:
             self.after(0, lambda: apply_final(temp_orders, 0, 0, skipped, 0))
 
-    def _check_shipment_alerts(self):
-        """Proactively notify admin about upcoming shipments based on settings."""
-        reminder_days = self.settings.get("reminder_days", 7)
-        now = datetime.now()
-        upcoming = []
-        
-        for o in self._orders:
-            if o.get("shipped_status") in (SHIPPED_DONE, "Cancelled"): continue
-            tod_str = o.get("tod", "")
-            if not tod_str: continue
-            
-            dt = None
-            for fmt in ["%d-%b-%y","%d-%b-%Y","%Y-%m-%d"]:
-                try: dt = datetime.strptime(tod_str, fmt); break
-                except: pass
-            
-            if dt:
-                diff = (dt - now).days
-                if 0 <= diff <= reminder_days:
-                    upcoming.append(f"• {o.get('order_no')} ({o.get('country')}) — Due in {diff} days")
-        
-        if upcoming:
-            title = f"🔔 {len(upcoming)} Upcoming Shipments"
-            msg = f"The following orders are due for shipment within {reminder_days} days:\n\n"
-            msg += "\n".join(upcoming[:10])
-            if len(upcoming) > 10:
-                msg += f"\n... and {len(upcoming)-10} more."
-            
-            # Show professional alert
-            ProToast(self, "warning", title, msg)
 
     def _record_change(self, row, key):
         """Record the timestamp of a change for visual highlighting."""

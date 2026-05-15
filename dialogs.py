@@ -9,6 +9,19 @@ from logic import calculate_row
 from database import auth_load, _auth_save, _hp, log_action
 import json
 
+# ── Mousewheel Helper ────────────────────────────────────────────────────────
+def add_mouse_wheel(widget, canvas):
+    def _on_mousewheel(event):
+        canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+    
+    def bind_recursive(w):
+        w.bind("<MouseWheel>", _on_mousewheel)
+        for child in w.winfo_children():
+            bind_recursive(child)
+    
+    canvas.bind("<MouseWheel>", _on_mousewheel)
+    bind_recursive(widget)
+
 
 # ── Professional Confirmation / Info / Warning Popup ─────────────────────────
 class ProToast(tk.Toplevel):
@@ -421,6 +434,10 @@ class FactoryMerchantManager(tk.Toplevel):
         self.lb = tk.Listbox(main, bg=T["surf2"], fg=T["text"], font=(T["mono"],10), selectbackground=T["surf"], selectforeground=T["gold"], relief="flat", bd=0)
         self.lb.pack(fill="both", expand=True)
         for it in self.items: self.lb.insert("end", it)
+
+        def _on_mousewheel(event):
+            self.lb.yview_scroll(int(-1*(event.delta/120)), "units")
+        self.lb.bind("<MouseWheel>", _on_mousewheel)
         
         tk.Button(main, text="🗑️ Delete Selected", font=(T["font"],9), bg=T["red"], fg="white", relief="flat", cursor="hand2", command=self._delete).pack(pady=10)
         
@@ -510,6 +527,7 @@ class AdvancedSearchDialog(tk.Toplevel):
         body.bind("<Configure>",
                   lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         canvas.create_window((0, 0), window=body, anchor="nw", width=464)
+        add_mouse_wheel(body, canvas)
 
         # ── Section 1: Status ────────────────────────────────────────────────
         self._section(body, "SHIPPED STATUS", T["blue"])
@@ -1452,6 +1470,7 @@ class VersionHistoryDialog(tk.Toplevel):
         self.scroll_frame = tk.Frame(canvas, bg=T["bg"])
         canvas.create_window((0, 0), window=self.scroll_frame, anchor="nw", width=540)
         self.scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        add_mouse_wheel(self.scroll_frame, canvas)
 
         # Render Versions
         for entry in self.changelog:
@@ -1548,6 +1567,7 @@ class UpdateReviewDialog(tk.Toplevel):
         self.scroll_frame = tk.Frame(canvas, bg=T["bg"])
         canvas.create_window((0, 0), window=self.scroll_frame, anchor="nw", width=580)
         self.scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        add_mouse_wheel(self.scroll_frame, canvas)
 
         tk.Label(self.scroll_frame, text="RELEASE NOTES:", font=(T["font"], 9, "bold"),
                  fg=T["gold"], bg=T["bg"]).pack(anchor="w", pady=(10, 5))

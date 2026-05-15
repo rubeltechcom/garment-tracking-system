@@ -94,12 +94,27 @@ class SettingsDialog(tk.Toplevel):
         self.body.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         canvas.create_window((0, 0), window=self.body, anchor="nw", width=622)
 
+        # Mousewheel binding
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        # Bind to canvas and all its children
+        def bind_recursive(w):
+            w.bind("<MouseWheel>", _on_mousewheel)
+            for child in w.winfo_children():
+                bind_recursive(child)
+        
+        canvas.bind("<MouseWheel>", _on_mousewheel)
+        # We'll call bind_recursive after building sections
+        self._bind_mouse = bind_recursive
+
         # Build Sections in Order
         self._build_company_section()
         self._build_alert_section()
         self._build_export_section()
         self._build_version_section()
         self._build_restore_section()
+        self._bind_mouse(self.body)
 
     def _build_company_section(self):
         f = self._section("🏢  COMPANY INFORMATION", T["gold"])

@@ -63,6 +63,19 @@ class DashboardFrame(tk.Frame):
         def _on_canvas_resize(event):
             canvas.itemconfig(canvas.create_window((0,0), window=self.scroll_body, anchor="nw"), width=event.width)
         canvas.bind("<Configure>", _on_canvas_resize)
+        
+        # Mousewheel binding
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        def bind_recursive(w):
+            w.bind("<MouseWheel>", _on_mousewheel)
+            for child in w.winfo_children():
+                bind_recursive(child)
+        
+        canvas.bind("<MouseWheel>", _on_mousewheel)
+        # We'll apply this recursively at the end of _build
+        self._bind_mouse = bind_recursive
 
         # ── KPI row ──────────────────────────────────────────────────────────
         self._build_kpi_row(self.scroll_body)
@@ -99,6 +112,7 @@ class DashboardFrame(tk.Frame):
         dp.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
         dp.pack_propagate(False)
         self._build_distribution_panel(dp)
+        self._bind_mouse(self.scroll_body)
 
     def _build_trend_chart(self, parent):
         self._panel_header(parent, "SHIPMENT TRENDS (LAST 6 MONTHS)", "#2DD4BF", "\U0001f4c8")
@@ -531,6 +545,12 @@ class DashboardFrame(tk.Frame):
         xs.pack(side="bottom", fill="x")
         ys.pack(side="right",  fill="y")
         dt.pack(fill="both", expand=True)
+
+        # Mousewheel support
+        def _on_mousewheel(event):
+            dt.yview_scroll(int(-1*(event.delta/120)), "units")
+        dt.bind("<MouseWheel>", _on_mousewheel)
+
         dt.tag_configure("shipped",   foreground="#22C55E")
         dt.tag_configure("pending",   foreground="#F59E0B")
         dt.tag_configure("cancelled", foreground="#F87171")
