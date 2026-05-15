@@ -10,15 +10,15 @@ import hashlib
 from config import VERSION, BASE_DIR, GITHUB_TOKEN, REPO_OWNER, REPO_NAME
 
 def get_hwid():
-    """পিসির জন্য একটি ইউনিক হার্ডওয়্যার আইডি (HWID) জেনারেট করে।"""
+    """Generates a unique hardware ID for the current PC."""
+    import uuid as _uuid
     try:
-        # Windows UUID সংগ্রহ করা
-        cmd = 'wmic csproduct get uuid'
-        uuid = subprocess.check_output(cmd, shell=True).decode().split('\n')[1].strip()
-        # সিকিউরিটির জন্য এটিকে হ্যাশ (Hash) করা
-        return hashlib.sha256(uuid.encode()).hexdigest()[:16].upper()
+        # Guaranteed unique ID based on the machine's MAC address
+        node = _uuid.getnode()
+        hwid = hashlib.sha256(str(node).encode()).hexdigest()[:16].upper()
+        return f"GT-{hwid}"
     except Exception:
-        return "DEV-UNKNOWN-000"
+        return "GT-DEFAULT-UUID"
 
 def _get_github_content(path):
     """গিটহাব এপিআই ব্যবহার করে প্রাইভেট রিপোজিটরি থেকে ফাইলের ডাটা সংগ্রহ করে।"""

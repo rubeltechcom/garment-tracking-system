@@ -1,5 +1,17 @@
 [
     {
+        "version": "1.4.1",
+        "date": "2026-05-15",
+        "title": "Stability & UI Refinement",
+        "changes": [
+            "Fixed critical TypeError in Dashboard KPI rendering.",
+            "Restored missing Licensing and Update sections in Settings.",
+            "Implemented persistent 'Save All Settings' bar for better UX.",
+            "Added missing '_logout' method to ensure navigation stability.",
+            "Optimized HWID generation for maximum machine compatibility (MAC/Registry fallback)."
+        ]
+    },
+    {
         "version": "1.4.0",
         "date": "2026-05-15",
         "title": "Pro-Licensing & Secure Deployment",

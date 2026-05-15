@@ -8,5 +8,6 @@
   "theme": "dark",
   "show_default_creds": false,
   "reminder_days": 7,
-  "last_version": "1.2.0"
+  "license_key": "RUBEL-TECH-2026",
+  "last_version": "1.4.0"
 }

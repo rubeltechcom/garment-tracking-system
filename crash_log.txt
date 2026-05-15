@@ -1,18 +1,12 @@
 Traceback (most recent call last):
-  File "C:\Users\User\Desktop\garment_system_v4_final\debug_app.py", line 15, in run_debug
+  File "C:\Users\User\Desktop\garment_system_v6_final\debug_app.py", line 15, in run_debug
     app = MainApp(admin_user)
-  File "C:\Users\User\Desktop\garment_system_v4_final\garment_tracker.py", line 205, in __init__
+  File "C:\Users\User\Desktop\garment_system_v6_final\garment_tracker.py", line 206, in __init__
     self._build()
     ~~~~~~~~~~~^^
-  File "C:\Users\User\Desktop\garment_system_v4_final\garment_tracker.py", line 272, in _build
-    self.dashboard_view = DashboardFrame(
-                          ~~~~~~~~~~~~~~^
-        self.main_container, self._orders, on_close=self._show_orders)
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\User\Desktop\garment_system_v4_final\dashboard.py", line 13, in __init__
-    self._build()
-    ~~~~~~~~~~~^^
-  File "C:\Users\User\Desktop\garment_system_v4_final\dashboard.py", line 68, in _build
-    self._build_kpi_row(self.scroll_body)
-    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
-TypeError: DashboardFrame._build_kpi_row() takes 1 positional argument but 2 were given
+  File "C:\Users\User\Desktop\garment_system_v6_final\garment_tracker.py", line 264, in _build
+    ("Logout",       "\u2297",     self._logout,              None),
+                                   ^^^^^^^^^^^^
+  File "C:\Python314\Lib\tkinter\__init__.py", line 2571, in __getattr__
+    return getattr(self.tk, attr)
+AttributeError: '_tkinter.tkapp' object has no attribute '_logout'

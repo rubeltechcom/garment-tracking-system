@@ -1115,6 +1115,13 @@ class MainApp(tk.Tk):
         """Open the professional version history (changelog) dialog."""
         VersionHistoryDialog(self)
 
+    def _logout(self):
+        """Confirm and logout from the current session."""
+        if show_confirm(self, "Confirm Logout", "Are you sure you want to log out?"):
+            # Close the main window. 
+            # Note: In the current __main__ structure, this will exit the app.
+            self.destroy()
+
     # ── Close / Logout ─────────────────────────────────────────────────────────
     def _on_close(self):
         self._stv.set("\u29d6  Saving backup\u2026"); self.update()
