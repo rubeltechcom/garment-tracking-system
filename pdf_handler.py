@@ -218,8 +218,8 @@ def extract_hm_records(bd_pdf, po_pdf):
 
 def extract_store_breakdown_records(pdf_path):
     """
-    Parses 'Size / Colour Breakdown - Store' PDF format.
-    Extracts data per page (usually one country per page).
+    Parses 'Size / Colour Breakdown - Store' PDF format with extreme robustness.
+    Uses a hybrid text and table approach to handle fragmented data.
     """
     records = []
     order_no = style_name = season = ""
@@ -228,7 +228,7 @@ def extract_store_breakdown_records(pdf_path):
         for page in pdf.pages:
             txt = page.extract_text() or ""
             
-            # Extract header info once
+            # 1. Extract Header Info
             if not order_no:
                 m = re.search(r"Order No:\s*(\d{6}-\d{4})", txt)
                 if m: order_no = m.group(1)
@@ -239,80 +239,89 @@ def extract_store_breakdown_records(pdf_path):
                 m = re.search(r"Season:\s*(\d+-\d{4})", txt)
                 if m: season = m.group(1).strip()
             
-            # Extract Country
-            # Format: Japan - JP (PM - IP)
+            # 2. Extract Country (e.g., Japan JP (PM-JP) or Ecuador EC (PM-EC))
             country_code = ""
-            # More flexible search for the breakdown header and country line
-            m_country = re.search(r"Size / Colour breakdown\s*\n?\s*(.+)\s+-\s+([A-Z]{2})\s*\(", txt, re.IGNORECASE)
+            m_country = re.search(r"Size / Colour breakdown\s*\n?\s*(.+?)\s+([A-Z]{2})\s*\(", txt, re.IGNORECASE)
             if m_country:
                 country_code = m_country.group(2)
             else:
-                # Fallback: just look for the pattern "Name - XX ("
-                m_fallback = re.search(r"([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+-\s+([A-Z]{2})\s*\(", txt)
+                # Broader search for country-like line
+                m_fallback = re.search(r"([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+([A-Z]{2})\s*\(", txt)
                 if m_fallback:
                     country_code = m_fallback.group(2)
             
-            # Extract Table Data
-            tables = page.extract_tables()
-            if not tables: continue
+            if not country_code: continue
+
+            # 3. Extract Colors from Text (more reliable than tables for headers)
+            # Find the color codes
+            color_codes = []
+            m_codes = re.search(r"H&M Colour Code:\s*(.+)", txt)
+            if m_codes:
+                color_codes = re.findall(r"(\d{2}-\d{3})", m_codes.group(1))
             
-            for tbl in tables:
-                color_map = {} # col_index -> {code, name}
-                quantity_row = None
-                
-                # Normalize table rows: strip and handle None
-                clean_tbl = []
-                for row in tbl:
-                    clean_tbl.append([str(c).strip() if c else "" for c in row])
-                
-                for row_idx, row_str in enumerate(clean_tbl):
-                    # Identify Color Columns
-                    if any("Colour Name" in cell for cell in row_str):
-                        # Find the color code row (usually 1-2 rows above)
-                        code_row = None
-                        for i in range(max(0, row_idx-3), row_idx):
-                            if any("Colour Code" in c for c in clean_tbl[i]):
-                                code_row = clean_tbl[i]; break
-                        
-                        for i, cell in enumerate(row_str):
-                            # Skip the first column (labels)
-                            if i > 0 and cell and cell.lower() != "colour name":
-                                color_map[i] = {
-                                    "name": cell,
-                                    "code": code_row[i] if code_row and i < len(code_row) else ""
-                                }
+            # Find the color names (this is tricky, so we'll use the codes count)
+            # We'll try to extract them from the "Colour Name:" line
+            color_names = []
+            m_names = re.search(r"Colour Name:\s*(.+)", txt)
+            if m_names:
+                # A bit of a hack: if we have the codes, we know how many names to expect
+                raw_names = m_names.group(1).strip()
+                # If there's only one code, the whole line is the name
+                if len(color_codes) == 1:
+                    color_names = [raw_names]
+                else:
+                    # For multiple, it's harder. Let's look for known color name patterns 
+                    # or just split and hope for the best, or just use the code.
+                    # Actually, let's just use the codes as the "name" if we can't split safely.
+                    color_names = [raw_names] # Fallback
+            
+            # 4. Extract Quantities from Tables
+            quantities = []
+            tables = page.extract_tables()
+            if tables:
+                for tbl in tables:
+                    for row in tbl:
+                        row_str = [str(c).strip() if c else "" for c in row]
+                        if any("Quantity" in cell for cell in row_str):
+                            # Clean row to find numeric values
+                            vals = []
+                            for cell in row_str:
+                                v = cell.replace(" ", "").replace(",", "").strip()
+                                if v.isdigit() and int(v) > 0:
+                                    vals.append(v)
+                            # If we found values, these are likely our quantities
+                            if vals:
+                                quantities = vals
+                                break
+                    if quantities: break
+            
+            # 5. Map and Build Records
+            # We match quantities to color codes by index
+            for i, qty in enumerate(quantities):
+                if i < len(color_codes):
+                    code = color_codes[i]
+                    name = color_names[0] if len(color_names) == 1 else (color_names[i] if i < len(color_names) else "")
+                    colour = f"{name} {code}".strip()
                     
-                    # Find Quantity Row - specifically the one that has numbers matching our colors
-                    if any("Quantity" in cell for cell in row_str):
-                        # We want the one that likely corresponds to the Total section
-                        # (Usually the last one or one with large numbers)
-                        quantity_row = row_str
-                
-                if quantity_row and color_map and country_code:
-                    for col_idx, color_info in color_map.items():
-                        if col_idx < len(quantity_row):
-                            qty_val = quantity_row[col_idx].replace(" ", "").replace(",", "").strip()
-                            if qty_val.isdigit() and int(qty_val) > 0:
-                                colour = f"{color_info['name']} {color_info['code']}".strip()
-                                rec = {
-                                    "order_no": order_no,
-                                    "style_name": style_name,
-                                    "colour": colour,
-                                    "order_qty": qty_val,
-                                    "tod": "", 
-                                    "country": country_code,
-                                    "order_qty_set": qty_val,
-                                    "no_of_pcs": "",
-                                    "ship_mode": "SEA",
-                                    "season": season,
-                                    "sales_mode": "",
-                                    "total_order_qty": "",
-                                    "hm_merch": "", "hm_tech": "", "factory_merch": "",
-                                    "ship_qty_set": "", "carton_qty": "", "first_last": "", "shipped_status": "",
-                                }
-                                records.append(calculate_row(rec))
+                    rec = {
+                        "order_no": order_no,
+                        "style_name": style_name,
+                        "colour": colour,
+                        "order_qty": qty,
+                        "tod": "", 
+                        "country": country_code,
+                        "order_qty_set": qty,
+                        "no_of_pcs": "",
+                        "ship_mode": "SEA",
+                        "season": season,
+                        "sales_mode": "",
+                        "total_order_qty": "",
+                        "hm_merch": "", "hm_tech": "", "factory_merch": "",
+                        "ship_qty_set": "", "carton_qty": "", "first_last": "", "shipped_status": "",
+                    }
+                    records.append(calculate_row(rec))
     
-    # Post-process to set total_order_qty as sum of all colors
+    # 6. Post-process Totals
     total_all = sum(int(r["order_qty"]) for r in records if r["order_qty"].isdigit())
     for r in records:
         r["total_order_qty"] = str(total_all)
