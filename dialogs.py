@@ -1291,14 +1291,14 @@ class ReviewUpdatesDialog(tk.Toplevel):
         style = ttk.Style()
         style.theme_use('clam')
         style.configure("Review.Treeview", 
-                        background="#0A0E14", 
-                        foreground="#E6EDF3", 
-                        fieldbackground="#0A0E14",
+                        background=T["bg"], 
+                        foreground=T["text"], 
+                        fieldbackground=T["bg"],
                         rowheight=30)
         style.configure("Review.Treeview.Heading", 
-                        background="#21262D", 
-                        foreground="#E6EDF3", 
-                        font=("Inter", 10, "bold"))
+                        background=T["surf3"], 
+                        foreground=T["text"], 
+                        font=(T["font"], 10, "bold"))
         self.tree.configure(style="Review.Treeview")
 
         col_w = {"Action": 100, "Order No": 130, "Country": 120, "Field / Details": 150, "Old Value": 220, "New Value": 220}
@@ -1369,14 +1369,14 @@ class AuditLogViewerDialog(tk.Toplevel):
         style = ttk.Style()
         style.theme_use('clam')
         style.configure("Audit.Treeview", 
-                        background="#0A0E14", 
-                        foreground="#E6EDF3", 
-                        fieldbackground="#0A0E14",
+                        background=T["bg"], 
+                        foreground=T["text"], 
+                        fieldbackground=T["bg"],
                         rowheight=28)
         style.configure("Audit.Treeview.Heading", 
-                        background="#21262D", 
-                        foreground="#E6EDF3", 
-                        font=("Inter", 10, "bold"))
+                        background=T["surf3"], 
+                        foreground=T["text"], 
+                        font=(T["font"], 10, "bold"))
         self.tree.configure(style="Audit.Treeview")
 
         # Column Config

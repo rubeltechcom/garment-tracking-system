@@ -172,7 +172,8 @@ class SettingsDialog(tk.Toplevel):
         tk.Label(f, text="Available Backups", font=(T["font"], 9, "bold"), fg=T["text"], bg=T["surf2"]).pack(anchor="w")
         lf = tk.Frame(f, bg=T["surf3"]); lf.pack(fill="x", pady=4)
         
-        self._bk_tree = ttk.Treeview(lf, columns=("cat", "file", "size", "date"), show="headings", height=5)
+        self._bk_tree = ttk.Treeview(lf, columns=("cat", "file", "size", "date"), 
+                                     show="headings", height=5, style="Main.Treeview")
         for col, head, w in [("cat","Type",80), ("file","File",220), ("size","Size",70), ("date","Date",140)]:
             self._bk_tree.heading(col, text=head); self._bk_tree.column(col, width=w)
         self._bk_tree.pack(fill="x")
