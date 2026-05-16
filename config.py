@@ -6,7 +6,7 @@ AUTH_FILE = os.path.join(BASE_DIR, "auth.dat")
 REMEMBER_FILE = os.path.join(BASE_DIR, "remember.dat")
 CHANGELOG_FILE = os.path.join(BASE_DIR, "changelog.json")
 
-VERSION = "1.4.1"
+VERSION = "1.4.2"
 GITHUB_REPO = "https://github.com/rubeltechcom/garment-tracking-system"
 REPO_OWNER = "rubeltechcom"
 REPO_NAME = "garment-tracking-system"

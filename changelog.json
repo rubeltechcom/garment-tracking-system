@@ -1,5 +1,16 @@
 [
     {
+        "version": "1.4.2",
+        "date": "2026-05-16",
+        "title": "Codebase Optimization & Cleanup",
+        "changes": [
+            "Cleaned up repository by removing obsolete migration and debug scripts.",
+            "Centralized shared UI components into a new 'widgets.py' module.",
+            "Improved application maintainability through better code modularization.",
+            "Refined repository structure and excluded temporary system files from version control."
+        ]
+    },
+    {
         "version": "1.4.1",
         "date": "2026-05-15",
         "title": "Stability & UI Refinement",
