@@ -9,6 +9,7 @@ from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
 
 from config import T, BASE_DIR, bind_hover, VERSION
+from widgets import mk_btn, mk_entry
 from database import SQLITE_DB, BACKUP_DIR, backup_manual
 
 SETTINGS_FILE = os.path.join(BASE_DIR, "app_settings.json")
@@ -251,10 +252,9 @@ class SettingsDialog(tk.Toplevel):
             messagebox.showinfo("Done", "Restored! Please restart.", parent=self)
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
+# Thin aliases so existing call sites keep working after centralisation in widgets.py
 def _mk_btn(parent, text, bg, fg, cmd, hov_bg=None, size=9):
-    b = tk.Button(parent, text=text, font=(T["font"], size, "bold"), bg=bg, fg=fg, relief="flat", padx=12, pady=6, cursor="hand2", command=cmd)
-    if hov_bg: bind_hover(b, bg, hov_bg, fg, fg)
-    return b
+    return mk_btn(parent, text, bg, fg, cmd, hov_bg, size)
 
 def _mk_entry(parent, var, width=30):
-    return tk.Entry(parent, textvariable=var, font=(T["mono"], 9), bg=T["surf3"], fg=T["text"], relief="flat", bd=0, width=width, insertbackground=T["text"])
+    return mk_entry(parent, var, width)

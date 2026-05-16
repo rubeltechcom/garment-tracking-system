@@ -5,7 +5,7 @@ def calculate_row(row: dict) -> dict:
     r = dict(row)
     def _i(k):
         try: return int(str(r.get(k,"") or "0").replace(",","").strip())
-        except: return 0
+        except (ValueError, TypeError): return 0
     nop  = _i("no_of_pcs") or 1
     oset = _i("order_qty_set")
     sset = _i("ship_qty_set")
@@ -21,7 +21,7 @@ def calculate_row(row: dict) -> dict:
                 monday = dt - timedelta(days=dt.weekday())
                 r["week"] = f"Week-{dt.isocalendar()[1]:02d} [{monday.strftime('%d-%b-%y')}]"
                 break
-            except: pass
+            except ValueError: pass
     c = str(r.get("country","") or "").strip().upper()
     if c in COUNTRY_CUTOFF: r["cut_off"] = COUNTRY_CUTOFF[c]
     
@@ -34,7 +34,7 @@ def auto_first_last(orders: list) -> list:
     def _p(s):
         for fmt in ["%d-%b-%y","%d-%b-%Y","%Y-%m-%d"]:
             try: return datetime.strptime(str(s).strip(), fmt)
-            except: pass
+            except ValueError: pass
         return None
     grp = {}
     for i, o in enumerate(orders): grp.setdefault(o.get("order_no",""), []).append(i)
@@ -70,7 +70,7 @@ def build_analytics(orders: list) -> dict:
         co  = o.get("country","")    or ""
         def _i(k):
             try: return int(str(o.get(k,"") or "0").replace(",",""))
-            except: return 0
+            except (ValueError, TypeError): return 0
         oq = _i("order_qty_set"); sq = _i("ship_qty_set")
         is_shipped   = st == "Shipped"
         is_cancelled = st == "Cancelled"

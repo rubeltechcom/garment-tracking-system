@@ -154,12 +154,12 @@ class ProToast(tk.Toplevel):
 
     def _dismiss(self):
         try: self.destroy()
-        except: pass
+        except Exception: pass  # TclError if window already destroyed
 
 
-def show_confirm(parent, title, message, on_yes):
+def show_confirm(parent, title, message, on_yes, on_no=None):
     """Shortcut for confirmation dialogs with Yes/No buttons."""
-    ProToast(parent, "confirm", title, message, on_yes=on_yes)
+    ProToast(parent, "confirm", title, message, on_yes=on_yes, on_no=on_no)
 
 
 
@@ -1223,7 +1223,7 @@ class ReportManager(tk.Toplevel):
                                 if s_dt <= dt <= e_dt:
                                     res.append(o)
                                 break
-                            except: pass
+                            except ValueError: pass  # date parse failed, skip format
                     return res, f"{s_dt.strftime('%d-%b-%y')} to {e_dt.strftime('%d-%b-%y')}"
 
             def run_export(ext):

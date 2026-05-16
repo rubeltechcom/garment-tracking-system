@@ -89,6 +89,7 @@ def _extract_ship_mode_map(po_pdf):
 def extract_hm_records(bd_pdf, po_pdf):
     order_no=style_no=""
     season=no_of_pieces=sales_mode=total_qty=""
+    date_of_order=""
     delivery_map={}; country_qty={}
     color_cols={}
 
@@ -134,6 +135,12 @@ def extract_hm_records(bd_pdf, po_pdf):
     color_names = {}
     with pdfplumber.open(po_pdf) as pdf:
         for page in pdf.pages:
+            txt = page.extract_text() or ""
+            # Extract Date of Order from full text (e.g. "Date of Order: 31 Mar, 2026")
+            if not date_of_order:
+                m = re.search(r"Date\s+of\s+Order:\s*(\d{1,2}\s+\w+,?\s*\d{4})", txt)
+                if m:
+                    date_of_order = _fmt_date(m.group(1))
             for tbl in page.extract_tables() or []:
                 for row in tbl:
                     if not row: continue
@@ -210,6 +217,7 @@ def extract_hm_records(bd_pdf, po_pdf):
                 "tod":delivery_map.get(country,""),"country":country,"order_qty_set":qty,
                 "no_of_pcs":no_of_pieces,"ship_mode":ship_mode,"season":season,
                 "sales_mode":sales_mode,"total_order_qty":total_qty,
+                "date_of_order":date_of_order,
                 "hm_merch":"","hm_tech":"","factory_merch":"",
                 "ship_qty_set":"","carton_qty":"","first_last":"","shipped_status":"",
             }

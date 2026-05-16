@@ -7,13 +7,15 @@ from tkinter import ttk, filedialog, messagebox
 from config import T, COLUMNS, COL_KEYS, STATUS_OPTIONS, COUNTRY_CUTOFF, DEFAULT_COUNTRY_CUTOFF, can, bind_hover, SHIPPED_DONE, VERSION
 from database import (db_load, db_save, auth_load, auth_verify,
                        load_remembered, save_remembered, clear_remembered,
+                       generate_session_token,
                        backup_on_close, backup_manual, stop_scheduled_backup,
                        get_backup_info, BACKUP_DIR, log_action)
 from logic import calculate_row, auto_first_last
 from pdf_handler import extract_hm_records
 from export import export_excel
 from dashboard import DashboardFrame
-from dialogs import RowEditor, BulkEditor, CutoffManager, UserManager, ReportManager, FactoryMerchantManager, AdvancedSearchDialog, ProToast, show_confirm, ReviewUpdatesDialog, AuditLogViewerDialog, VersionHistoryDialog, UpdateReviewDialog
+from dialogs import RowEditor, BulkEditor, CutoffManager, UserManager, ReportManager, FactoryMerchantManager, AdvancedSearchDialog, ProToast, ReviewUpdatesDialog, AuditLogViewerDialog, VersionHistoryDialog, UpdateReviewDialog
+from widgets import mk_btn, styled_entry, show_confirm
 from settings import SettingsDialog, load_settings
 from updater import check_for_updates, perform_git_update
 
@@ -63,33 +65,10 @@ def apply_global_style():
           background=[("active", T["surf4"])])
 
 
+# mk_btn, show_confirm, styled_entry are imported from widgets.py
+# _mk_btn is a local alias so existing call sites keep working unchanged.
 def _mk_btn(parent, text, bg, fg, cmd, hover_bg=None, font_size=10, padx=14, pady=6):
-    """Reusable modern flat button with hover."""
-    hbg = hover_bg or bg
-    b = tk.Button(parent, text=text, font=(T["font"], font_size, "bold"),
-                  bg=bg, fg=fg, relief="flat", bd=0,
-                  padx=padx, pady=pady, cursor="hand2",
-                  activebackground=hbg, activeforeground=fg, command=cmd)
-    bind_hover(b, bg, hbg, fg, fg)
-    return b
-
-
-def show_confirm(parent, title, message, on_yes, on_no=None):
-    """Shortcut for confirmation dialogs with Yes/No buttons."""
-    ProToast(parent, "confirm", title, message, on_yes=on_yes, on_no=on_no)
-
-
-def styled_entry(parent, textvariable, width=22, show=""):
-    """A bordered entry widget with dark background."""
-    f = tk.Frame(parent, bg=T["border"], padx=1, pady=1)
-    e = tk.Entry(f, textvariable=textvariable, show=show,
-                 font=(T["font"], 10), bg=T["surf3"], fg=T["text"],
-                 relief="flat", bd=0, insertbackground=T["accent"],
-                 width=width, highlightthickness=0)
-    e.pack(padx=8, pady=6)
-    e.bind("<FocusIn>",  lambda ev, fr=f: fr.config(bg=T["accent"]))
-    e.bind("<FocusOut>", lambda ev, fr=f: fr.config(bg=T["border"]))
-    return f, e
+    return mk_btn(parent, text, bg, fg, cmd, hover_bg, font_size, padx, pady)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -106,9 +85,11 @@ class LoginWindow(tk.Tk):
         self.logged_in = None
         self._build()
         self.protocol("WM_DELETE_WINDOW", self.destroy)
-        ru, rp = load_remembered()
-        if ru and rp:
-            self._uv.set(ru); self._pv.set(rp); self.remember_var.set(True)
+        ru, _token = load_remembered()
+        if ru:
+            # Pre-fill username only — password is never stored on disk
+            self._uv.set(ru)
+            self.remember_var.set(True)
 
     def _build(self):
         # Top accent gradient bar
@@ -162,24 +143,21 @@ class LoginWindow(tk.Tk):
         btn.pack(fill="x")
         bind_hover(btn, T["accent"], T["accent2"], "white", "white")
 
-        if self.settings.get("show_default_creds", True):
-            tk.Label(self, text="Default credentials:  admin / admin123",
-                     font=(T["font"], 8), fg=T["dim"], bg=T["bg"]).pack(pady=(12, 0))
+        # Default credentials hint removed for security.
+        # On first run, the default password is admin123 — change it immediately
+        # via User Management after logging in.
 
     def _login(self):
         u = self._uv.get().strip(); p = self._pv.get().strip()
         r = auth_verify(u, p, self.users)
         if r:
-            if self.remember_var.get(): save_remembered(u, p)
-            else: clear_remembered()
-            
-            # Hide default creds for future runs
-            if self.settings.get("show_default_creds"):
-                from settings import save_settings
-                self.settings["show_default_creds"] = False
-                save_settings(self.settings)
-                
-            self.logged_in = {"username": u, **r}; self.destroy()
+            if self.remember_var.get():
+                token = generate_session_token()
+                save_remembered(u, token)
+            else:
+                clear_remembered()
+            self.logged_in = {"username": u, **r}
+            self.destroy()
         else:
             self._err.set("⚠  Invalid username or password")
 
@@ -461,7 +439,7 @@ class MainApp(tk.Tk):
             dt = None
             for fmt in ["%d-%b-%y","%d-%b-%Y","%Y-%m-%d"]:
                 try: dt = datetime.strptime(tod_str, fmt); break
-                except: pass
+                except ValueError: pass
             
             if dt:
                 diff = (dt - now).days
@@ -531,7 +509,7 @@ class MainApp(tk.Tk):
                         is_recent = True
                     else:
                         try: del self._recent_changes[ck]
-                        except: pass
+                        except KeyError: pass
 
                 if k == "ship_mode" and str(v).strip().upper() == "AIR":
                     v = "✈ AIR"; is_air = True
@@ -542,7 +520,7 @@ class MainApp(tk.Tk):
                         num = int(str(v).replace(",", ""))
                         if num < 0: v = f"▼ {v}"
                         elif num > 0: v = f"▲ +{v}" if not str(v).startswith("+") else f"▲ {v}"
-                    except: pass
+                    except ValueError: pass
                 vals.append(v)
             
             # Delay Alert Highlighting
@@ -555,7 +533,7 @@ class MainApp(tk.Tk):
                             dt = datetime.strptime(tod_str, fmt)
                             if dt < now_dt: is_overdue = True
                             break
-                        except: pass
+                        except ValueError: pass
 
             # Apply Multiple Tags
             tags = []
@@ -618,7 +596,7 @@ class MainApp(tk.Tk):
                         dt = datetime.strptime(tod, fmt).date()
                         if s_dt <= dt <= e_dt: res.append(o)
                         break
-                    except: pass
+                    except ValueError: pass
             f = res
 
         # Text search (all columns)
@@ -700,7 +678,7 @@ class MainApp(tk.Tk):
                         
                         try:
                             if float(v_str.replace(",","")) == float(old_v.replace(",","")): continue
-                        except: pass
+                        except (ValueError, TypeError): pass
                         
                         if v_str.lower() != old_v.lower():
                             diffs.append((k, old_v, v_str))
@@ -797,8 +775,7 @@ class MainApp(tk.Tk):
         import time
         ck = (row.get("order_no"), row.get("country"), row.get("colour"), row.get("style_name"), key)
         self._recent_changes[ck] = time.time()
-        # Schedule a refresh to clear the highlight in 10 mins
-        self.after(600000, self._apply_filter)
+        # Highlight will clear on the next user-triggered filter or data change
 
     def _find_idx(self, row):
         """Find the index of an order in self._orders based on order_no, country, and colour."""
@@ -870,23 +847,54 @@ class MainApp(tk.Tk):
                     row_dict = {str(k).strip().lower(): v for k, v in row.items()}
                     for ec, val in row_dict.items():
                         if pd.isna(val): continue
-                        v = str(val).strip()
-                        if not v: continue
-                        if   "order no" in ec or "o/n" in ec: d["order_no"] = v
-                        elif "style" in ec:      d["style_name"] = v
-                        elif "color" in ec or "colour" in ec: d["colour"] = v
-                        elif "country" in ec:    d["country"] = v
-                        elif "tod" in ec:        d["tod"] = v
-                        elif "qty" in ec and ("order" in ec or "ord" in ec) and "pcs" not in ec: d["order_qty_set"] = v
-                        elif "qty" in ec and "ship" in ec and "pcs" not in ec: d["ship_qty_set"] = v
-                        elif "short" in ec or "excess" in ec: d["short_excess"] = v
-                        elif "ship mode" in ec or "mode" in ec: d["ship_mode"] = v
-                        elif "season" in ec:     d["season"] = v
-                        elif "status" in ec:     d["shipped_status"] = v
-                        elif "week" in ec:       d["week"] = v
-                        elif "factory" in ec:    d["factory_merch"] = v
-                        elif "merch" in ec and "hm" in ec: d["hm_merch"] = v
-                        elif "cut" in ec:        d["cut_off"] = v
+                        # Convert pandas Timestamp / "2026-01-12 00:00:00" → "12-Jan-26"
+                        if hasattr(val, 'strftime'):
+                            v = val.strftime("%d-%b-%y")
+                        else:
+                            v = str(val).strip()
+                            if v and "00:00:00" in v:
+                                try:
+                                    from datetime import datetime as _dt
+                                    v = _dt.strptime(v, "%Y-%m-%d %H:%M:%S").strftime("%d-%b-%y")
+                                except ValueError:
+                                    try: v = _dt.strptime(v.split(" ")[0], "%Y-%m-%d").strftime("%d-%b-%y")
+                                    except ValueError: pass
+                        if not v or v.lower() in ("nan", "none"): continue
+
+                        # ── column mapping (matches exact template headers) ──
+                        if   "order no" in ec or "o/n" in ec:                              d["order_no"] = v
+                        elif "style" in ec:                                                 d["style_name"] = v
+                        elif "colour" in ec or "color" in ec:                              d["colour"] = v
+                        elif "country" in ec:                                               d["country"] = v
+                        elif "tod" in ec:                                                   d["tod"] = v
+                        elif "total qty" in ec or "total_order_qty" in ec:                 d["total_order_qty"] = v
+                        # "Order Qty" → order_qty_set  (must come before generic qty check)
+                        elif ec == "order qty" or ec == "order_qty":                       d["order_qty"] = v; d["order_qty_set"] = v
+                        # "Qty / Set"
+                        elif "qty / set" in ec or "qty/set" in ec or ec == "qty set":     d["order_qty_set"] = v
+                        # "Qty / Pcs" (calculated, but store if provided)
+                        elif "qty / pcs" in ec or "qty/pcs" in ec or ec == "qty pcs":     d["order_qty_pcs"] = v
+                        # "Ship Qty Set"
+                        elif "ship qty set" in ec or "ship_qty_set" in ec:                 d["ship_qty_set"] = v
+                        # "Ship Qty Pcs"
+                        elif "ship qty pcs" in ec or "ship_qty_pcs" in ec:                 d["ship_qty_pcs"] = v
+                        elif "short" in ec or "excess" in ec:                              d["short_excess"] = v
+                        elif "carton" in ec:                                               d["carton_qty"] = v
+                        # "Mode" (ship mode — exact header is just "Mode")
+                        elif ec == "mode" or "ship mode" in ec or "ship_mode" in ec:      d["ship_mode"] = v
+                        elif "season" in ec:                                               d["season"] = v
+                        elif "cut off" in ec or "cut_off" in ec:                          d["cut_off"] = v
+                        elif "status" in ec:                                               d["shipped_status"] = v
+                        elif "week" in ec:                                                 d["week"] = v
+                        elif "1st & last" in ec or "first_last" in ec or "first & last" in ec: d["first_last"] = v
+                        elif "sales" in ec or "sales_mode" in ec:                         d["sales_mode"] = v
+                        # "Pcs" (no_of_pcs — exact header is just "Pcs")
+                        elif ec == "pcs" or ("pcs" in ec and "qty" not in ec and "ship" not in ec and "order" not in ec): d["no_of_pcs"] = v
+                        elif "date added" in ec or "date_added" in ec:                    d["date_added"] = v
+                        elif "added by" in ec or "added_by" in ec:                        d["added_by"] = v
+                        elif "factory merch" in ec or "factory_merch" in ec:              d["factory_merch"] = v
+                        elif "h&m merch" in ec or "hm_merch" in ec:                       d["hm_merch"] = v
+                        elif "h&m tech" in ec or "hm_tech" in ec:                         d["hm_tech"] = v
                     if d.get("order_no") and d.get("country"): records.append(d)
                 self._process_import_batch(records, "Excel")
             except Exception as e:
@@ -1091,13 +1099,6 @@ class MainApp(tk.Tk):
         """Open the professional version history (changelog) dialog."""
         VersionHistoryDialog(self)
 
-    def _logout(self):
-        """Confirm and logout from the current session."""
-        if show_confirm(self, "Confirm Logout", "Are you sure you want to log out?"):
-            # Close the main window. 
-            # Note: In the current __main__ structure, this will exit the app.
-            self.destroy()
-
     # ── Close / Logout ─────────────────────────────────────────────────────────
     def _on_close(self):
         self._stv.set("\u29d6  Saving backup\u2026"); self.update()
@@ -1106,6 +1107,7 @@ class MainApp(tk.Tk):
         self.destroy()
 
     def _logout(self):
+        """Confirm and logout from the current session."""
         if messagebox.askyesno("Logout", "Are you sure you want to log out?", parent=self):
             self.wants_logout = True
             self._on_close()
